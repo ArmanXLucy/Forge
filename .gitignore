@@ -1,0 +1,26 @@
+node_modules
+dist
+dist-ssr
+*.local
+.env
+.env.*
+!.env.example
+.DS_Store
+*.log
+ref.html
+ref_text.txt
+images.txt
+images2.txt
+contactsheet.jpg
+
+# QA and local browser artifacts
+.qa/
+.chrome-profile/
+*.mp4
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Local OS artifacts
+Thumbs.db

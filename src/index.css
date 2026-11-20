@@ -1,0 +1,234 @@
+@import '@fontsource-variable/dm-sans';
+@import '@fontsource/anton';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    color-scheme: light;
+  }
+
+  html {
+    scroll-behavior: smooth;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    @apply bg-ivory font-sans text-charcoal antialiased;
+    overflow-x: hidden;
+    text-rendering: optimizeLegibility;
+  }
+
+  #root {
+    min-height: 100vh;
+    overflow-x: clip;
+  }
+
+  section[id] {
+    scroll-margin-top: 88px;
+  }
+
+  ::selection {
+    background: #f97316;
+    color: #fff;
+  }
+
+  :focus-visible {
+    outline: 2px solid #f97316;
+    outline-offset: 3px;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    text-wrap: balance;
+  }
+
+  p {
+    text-wrap: pretty;
+  }
+
+  input,
+  textarea,
+  select,
+  button {
+    font: inherit;
+  }
+
+  img {
+    max-width: 100%;
+  }
+}
+
+@layer components {
+  .container-forge {
+    @apply mx-auto w-full max-w-[1440px] px-5 sm:px-8 lg:px-12 xl:px-16;
+  }
+
+  .container-narrow {
+    @apply mx-auto w-full max-w-4xl px-5 sm:px-8;
+  }
+
+  .eyebrow {
+    @apply inline-flex items-center gap-2 text-[11px] font-semibold uppercase tracking-widest2 text-orange-600;
+  }
+
+  .eyebrow-light {
+    @apply inline-flex items-center gap-2 text-[11px] font-semibold uppercase tracking-widest2 text-orange-400;
+  }
+
+  .display-hero {
+    font-family: 'Anton', Impact, sans-serif;
+    font-size: clamp(3.4rem, 8.6vw, 9rem);
+    line-height: 0.92;
+    text-transform: uppercase;
+    letter-spacing: -0.01em;
+  }
+
+  .display-h2 {
+    font-family: 'Anton', Impact, sans-serif;
+    font-size: clamp(2.4rem, 5.2vw, 5.25rem);
+    line-height: 0.95;
+    text-transform: uppercase;
+    letter-spacing: -0.005em;
+  }
+
+  .display-h3 {
+    font-family: 'Anton', Impact, sans-serif;
+    font-size: clamp(1.8rem, 3vw, 3rem);
+    line-height: 1;
+    text-transform: uppercase;
+  }
+
+  .display-word {
+    font-family: 'Anton', Impact, sans-serif;
+    font-size: clamp(3.5rem, 14vw, 15rem);
+    line-height: 0.78;
+    text-transform: uppercase;
+    letter-spacing: -0.02em;
+  }
+
+  .btn {
+    @apply inline-flex min-h-[48px] items-center justify-center gap-2 rounded-full px-6 text-[12px] font-bold uppercase tracking-[0.14em] transition-all duration-300 disabled:cursor-not-allowed disabled:opacity-50;
+  }
+
+  .btn-primary {
+    @apply btn bg-orange-500 text-white shadow-glow hover:bg-orange-600 active:scale-[0.98];
+  }
+
+  .btn-dark {
+    @apply btn bg-charcoal text-white hover:bg-warmblack active:scale-[0.98];
+  }
+
+  .btn-outline {
+    @apply btn border border-charcoal/25 bg-transparent text-charcoal hover:border-charcoal hover:bg-charcoal hover:text-white active:scale-[0.98];
+  }
+
+  .btn-outline-light {
+    @apply btn border border-white/30 bg-transparent text-white hover:border-white hover:bg-white hover:text-charcoal active:scale-[0.98];
+  }
+
+  .btn-white {
+    @apply btn bg-white text-charcoal hover:bg-ivory active:scale-[0.98];
+  }
+
+  .btn-sm {
+    @apply min-h-[42px] px-4 text-[11px];
+  }
+
+  .field-label {
+    @apply mb-1.5 block text-[12px] font-semibold uppercase tracking-[0.12em] text-charcoal/70;
+  }
+
+  .field-input {
+    @apply w-full rounded-xl border border-charcoal/15 bg-white px-4 py-3 text-[15px] text-charcoal placeholder:text-charcoal/35 transition-colors focus:border-orange-500 focus:outline-none focus:ring-4 focus:ring-orange-500/10;
+  }
+
+  .field-textarea {
+    @apply field-input min-h-[112px] resize-y;
+  }
+
+  .field-error {
+    @apply mt-1.5 text-[12px] font-medium text-red-600;
+  }
+
+  .card-surface {
+    @apply rounded-2xl border border-charcoal/10 bg-white;
+  }
+
+  .pill {
+    @apply inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-[10px] font-bold uppercase tracking-[0.14em];
+  }
+
+  .noise-overlay {
+    background-image: radial-gradient(rgba(255, 255, 255, 0.09) 0.5px, transparent 0.5px);
+    background-size: 4px 4px;
+  }
+
+  .hide-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .hide-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  .animation-delay-150 {
+    animation-delay: 150ms;
+  }
+
+  .animation-delay-300 {
+    animation-delay: 300ms;
+  }
+
+  .pause-on-hover:hover {
+    animation-play-state: paused;
+  }
+}
+
+@keyframes marquee {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Recharts focus outlines inside dashboard charts */
+.recharts-wrapper:focus,
+.recharts-surface:focus {
+  outline: none;
+}
+
+/* Keep every primary sidebar link visible on short laptop screens. */
+@media (max-height: 760px) {
+  .sidebar-optional {
+    display: none;
+  }
+}

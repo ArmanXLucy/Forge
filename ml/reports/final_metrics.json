@@ -1,0 +1,307 @@
+{
+  "version": "1.0.0",
+  "splits": {
+    "train": [
+      "003",
+      "004",
+      "005",
+      "006",
+      "007",
+      "008",
+      "011",
+      "013",
+      "015",
+      "016",
+      "018",
+      "019",
+      "020",
+      "021",
+      "022",
+      "023",
+      "026"
+    ],
+    "val": [
+      "002",
+      "010",
+      "012",
+      "014"
+    ],
+    "test": [
+      "001",
+      "009",
+      "017",
+      "024"
+    ]
+  },
+  "feature_order": [
+    "knee_min",
+    "knee_max",
+    "knee_rom",
+    "knee_std",
+    "knee_iqr",
+    "hip_min",
+    "hip_max",
+    "hip_rom",
+    "hip_std",
+    "hip_iqr",
+    "elbow_min",
+    "elbow_max",
+    "elbow_rom",
+    "elbow_std",
+    "elbow_iqr",
+    "shoulder_min",
+    "shoulder_max",
+    "shoulder_rom",
+    "shoulder_std",
+    "shoulder_iqr",
+    "ankle_min",
+    "ankle_max",
+    "ankle_rom",
+    "ankle_std",
+    "ankle_iqr",
+    "torso_mean",
+    "torso_max",
+    "torso_std",
+    "torso_rom",
+    "sway_std",
+    "sway_maxabs",
+    "sway_range",
+    "knee_dev_mean",
+    "knee_dev_max",
+    "knee_dev_asym_mean",
+    "knee_width_min",
+    "knee_width_max",
+    "ankle_width_mean",
+    "hip_drop_range",
+    "hip_drop_min",
+    "shoulder_drop_range",
+    "knee_lr_diff_mean",
+    "elbow_lr_diff_mean",
+    "wrist_l_range",
+    "wrist_r_range",
+    "wrist_l_max",
+    "wrist_r_max",
+    "knee_vel_absmean",
+    "elbow_vel_absmean",
+    "rep_rate_per_sec",
+    "angle_range_clip",
+    "rep_period_mean",
+    "rep_period_std",
+    "rep_period_cv",
+    "rep_period_min",
+    "rep_period_max",
+    "frac_below_25pct",
+    "frac_above_75pct",
+    "frac_mid",
+    "rom_per_rep"
+  ],
+  "rf_params": {
+    "n_estimators": 400,
+    "max_depth": 6,
+    "min_samples_leaf": 3,
+    "max_features": 0.5,
+    "class_weight": "balanced",
+    "random_state": 42,
+    "n_jobs": 2
+  },
+  "exercises": {
+    "squat": {
+      "n_clips": 150,
+      "threshold": 0.66,
+      "cv_5fold_group": {
+        "n": 150,
+        "accuracy": 0.5733,
+        "precision": 0.641,
+        "recall": 0.3333,
+        "f1": 0.4386,
+        "roc_auc": 0.6607,
+        "confusion": {
+          "tn_bad_correct": 61,
+          "fp_bad_as_good": 14,
+          "fn_good_as_bad": 50,
+          "tp_good_correct": 25
+        },
+        "false_accept_rate_bad_as_good": 0.1867,
+        "false_reject_rate_good_as_bad": 0.6667
+      },
+      "val": {
+        "n": 24,
+        "accuracy": 0.625,
+        "precision": 1.0,
+        "recall": 0.25,
+        "f1": 0.4,
+        "roc_auc": 0.6181,
+        "confusion": {
+          "tn_bad_correct": 12,
+          "fp_bad_as_good": 0,
+          "fn_good_as_bad": 9,
+          "tp_good_correct": 3
+        },
+        "false_accept_rate_bad_as_good": 0.0,
+        "false_reject_rate_good_as_bad": 0.75
+      },
+      "test": {
+        "n": 24,
+        "accuracy": 0.5,
+        "precision": 0.5,
+        "recall": 0.1667,
+        "f1": 0.25,
+        "roc_auc": 0.6528,
+        "confusion": {
+          "tn_bad_correct": 10,
+          "fp_bad_as_good": 2,
+          "fn_good_as_bad": 10,
+          "tp_good_correct": 2
+        },
+        "false_accept_rate_bad_as_good": 0.1667,
+        "false_reject_rate_good_as_bad": 0.8333
+      },
+      "onnx_file": "form_classifier_squat.onnx",
+      "onnx_parity_max_abs_diff": 5.189624769919021e-07,
+      "top_features": {
+        "rep_period_std": 0.0609,
+        "rep_period_cv": 0.0587,
+        "frac_above_75pct": 0.0535,
+        "elbow_min": 0.0422,
+        "frac_mid": 0.0369,
+        "rep_period_max": 0.0339,
+        "shoulder_iqr": 0.0298,
+        "elbow_max": 0.0296,
+        "ankle_width_mean": 0.0245,
+        "hip_min": 0.0222
+      }
+    },
+    "bicep_curl": {
+      "n_clips": 150,
+      "threshold": 0.64,
+      "cv_5fold_group": {
+        "n": 150,
+        "accuracy": 0.5267,
+        "precision": 0.5625,
+        "recall": 0.24,
+        "f1": 0.3364,
+        "roc_auc": 0.5821,
+        "confusion": {
+          "tn_bad_correct": 61,
+          "fp_bad_as_good": 14,
+          "fn_good_as_bad": 57,
+          "tp_good_correct": 18
+        },
+        "false_accept_rate_bad_as_good": 0.1867,
+        "false_reject_rate_good_as_bad": 0.76
+      },
+      "val": {
+        "n": 24,
+        "accuracy": 0.5,
+        "precision": 0.5,
+        "recall": 0.1667,
+        "f1": 0.25,
+        "roc_auc": 0.4444,
+        "confusion": {
+          "tn_bad_correct": 10,
+          "fp_bad_as_good": 2,
+          "fn_good_as_bad": 10,
+          "tp_good_correct": 2
+        },
+        "false_accept_rate_bad_as_good": 0.1667,
+        "false_reject_rate_good_as_bad": 0.8333
+      },
+      "test": {
+        "n": 24,
+        "accuracy": 0.5,
+        "precision": 0.5,
+        "recall": 0.0833,
+        "f1": 0.1429,
+        "roc_auc": 0.4306,
+        "confusion": {
+          "tn_bad_correct": 11,
+          "fp_bad_as_good": 1,
+          "fn_good_as_bad": 11,
+          "tp_good_correct": 1
+        },
+        "false_accept_rate_bad_as_good": 0.0833,
+        "false_reject_rate_good_as_bad": 0.9167
+      },
+      "onnx_file": "form_classifier_bicep_curl.onnx",
+      "onnx_parity_max_abs_diff": 5.432047024411801e-07,
+      "top_features": {
+        "rep_rate_per_sec": 0.073,
+        "wrist_l_range": 0.0549,
+        "elbow_iqr": 0.0453,
+        "frac_below_25pct": 0.0436,
+        "rep_period_cv": 0.0401,
+        "elbow_lr_diff_mean": 0.0391,
+        "rep_period_mean": 0.0352,
+        "rep_period_min": 0.029,
+        "rep_period_max": 0.0281,
+        "wrist_r_range": 0.0269
+      }
+    },
+    "push_up": {
+      "n_clips": 144,
+      "threshold": 0.58,
+      "cv_5fold_group": {
+        "n": 144,
+        "accuracy": 0.7014,
+        "precision": 0.7544,
+        "recall": 0.5972,
+        "f1": 0.6667,
+        "roc_auc": 0.7703,
+        "confusion": {
+          "tn_bad_correct": 58,
+          "fp_bad_as_good": 14,
+          "fn_good_as_bad": 29,
+          "tp_good_correct": 43
+        },
+        "false_accept_rate_bad_as_good": 0.1944,
+        "false_reject_rate_good_as_bad": 0.4028
+      },
+      "val": {
+        "n": 24,
+        "accuracy": 0.75,
+        "precision": 0.8,
+        "recall": 0.6667,
+        "f1": 0.7273,
+        "roc_auc": 0.8333,
+        "confusion": {
+          "tn_bad_correct": 10,
+          "fp_bad_as_good": 2,
+          "fn_good_as_bad": 4,
+          "tp_good_correct": 8
+        },
+        "false_accept_rate_bad_as_good": 0.1667,
+        "false_reject_rate_good_as_bad": 0.3333
+      },
+      "test": {
+        "n": 24,
+        "accuracy": 0.625,
+        "precision": 0.6364,
+        "recall": 0.5833,
+        "f1": 0.6087,
+        "roc_auc": 0.7361,
+        "confusion": {
+          "tn_bad_correct": 8,
+          "fp_bad_as_good": 4,
+          "fn_good_as_bad": 5,
+          "tp_good_correct": 7
+        },
+        "false_accept_rate_bad_as_good": 0.3333,
+        "false_reject_rate_good_as_bad": 0.4167
+      },
+      "onnx_file": "form_classifier_push_up.onnx",
+      "onnx_parity_max_abs_diff": 6.316138141393424e-07,
+      "top_features": {
+        "rep_period_mean": 0.0985,
+        "rom_per_rep": 0.0622,
+        "rep_rate_per_sec": 0.0483,
+        "elbow_iqr": 0.0364,
+        "rep_period_min": 0.035,
+        "shoulder_min": 0.034,
+        "frac_below_25pct": 0.0309,
+        "knee_max": 0.0298,
+        "hip_max": 0.0293,
+        "wrist_r_max": 0.0288
+      }
+    }
+  }
+}

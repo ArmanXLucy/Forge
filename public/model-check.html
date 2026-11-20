@@ -1,0 +1,540 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Fitness Coach · Model Check</title>
+<style>
+  :root{
+    --bg:#0b0d10; --panel:#141820; --line:#242b36; --ink:#e8edf5; --dim:#8b97a8;
+    --good:#37d67a; --bad:#ff5d5d; --accent:#7cc4ff;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+       font:14px/1.5 ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+  header{padding:18px 22px;border-bottom:1px solid var(--line);display:flex;
+         align-items:center;gap:14px;flex-wrap:wrap}
+  h1{font-size:16px;margin:0;letter-spacing:.02em}
+  .tag{font-size:11px;color:var(--dim);border:1px solid var(--line);
+       padding:2px 8px;border-radius:999px}
+  main{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(320px,1fr);
+       gap:18px;padding:18px 22px;align-items:start}
+  @media(max-width:900px){main{grid-template-columns:1fr}}
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px}
+  .stage{position:relative;background:#000;border-radius:10px;overflow:hidden;
+         aspect-ratio:4/3;max-height:70vh;margin:0 auto;display:grid;place-items:center}
+  video{width:100%;height:100%;object-fit:contain;display:block}
+  canvas.overlay{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+  .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  button{background:#1d2431;color:var(--ink);border:1px solid var(--line);
+         padding:8px 13px;border-radius:9px;cursor:pointer;font-size:13px}
+  button:hover:not(:disabled){border-color:#3a4658;background:#232b3a}
+  button:disabled{opacity:.45;cursor:not-allowed}
+  button.primary{background:#1b3a2b;border-color:#2f6b4c;color:#b7f5d3}
+  button.analyse{background:#1b2e44;border-color:#2f5573;color:#c7e6ff}
+  select{background:#1d2431;color:var(--ink);border:1px solid var(--line);
+         padding:8px 10px;border-radius:9px;font-size:13px}
+  label.file{background:#1d2431;border:1px solid var(--line);padding:8px 13px;
+             border-radius:9px;cursor:pointer;font-size:13px}
+  label.file input{display:none}
+  .metrics{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px}
+  .metric{background:#10141b;border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+  .metric .k{font-size:11px;color:var(--dim);text-transform:uppercase;letter-spacing:.06em}
+  .metric .v{font-size:19px;font-variant-numeric:tabular-nums;margin-top:3px}
+  .verdict{margin-top:14px;border-radius:12px;padding:14px 16px;border:1px solid var(--line);
+           background:#10141b}
+  .verdict .label{font-size:11px;color:var(--dim);letter-spacing:.08em;text-transform:uppercase}
+  .verdict .big{font-size:26px;font-weight:650;margin-top:2px}
+  .verdict .sub{color:var(--dim);font-size:12px;margin-top:6px}
+  .bar{height:8px;background:#1b212b;border-radius:999px;overflow:hidden;margin-top:10px}
+  .bar>i{display:block;height:100%;width:0;background:linear-gradient(90deg,#ff5d5d,#e0c341,#37d67a);
+         transition:width .3s}
+  .log{font:12px/1.6 ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--dim);
+       background:#0d1117;border:1px solid var(--line);border-radius:10px;padding:12px;
+       max-height:260px;overflow:auto;white-space:pre-wrap;margin-top:12px}
+  .ok{color:var(--good)} .fail{color:var(--bad)} .accent{color:var(--accent)}
+  .note{font-size:12px;color:var(--dim);margin:10px 0 0}
+  table.mini{width:100%;border-collapse:collapse;font-size:12px;margin-top:10px}
+  table.mini th,table.mini td{text-align:left;padding:5px 6px;border-bottom:1px solid var(--line)}
+  table.mini th{color:var(--dim);font-weight:500}
+</style>
+</head>
+<body>
+<header>
+  <h1>Fitness Coach · model check</h1>
+  <span class="tag">MediaPipe Pose Landmarker → 60 features → ONNX RandomForest</span>
+  <span class="tag" id="status">idle</span>
+</header>
+
+<main>
+  <section class="panel">
+    <div class="row" style="margin-bottom:12px">
+      <select id="exercise">
+        <option value="squat">Squat</option>
+        <option value="bicep_curl">Bicep curl</option>
+        <option value="push_up">Push-up</option>
+      </select>
+      <button id="btnCam" class="primary">Start camera</button>
+      <label class="file">Load video<input id="file" type="file" accept="video/*"></label>
+      <button id="btnStop" disabled>Stop</button>
+      <button id="btnAnalyse" class="analyse" disabled>Analyse set</button>
+      <button id="btnReset" disabled>Reset buffer</button>
+    </div>
+
+    <div class="stage">
+      <video id="video" playsinline muted></video>
+      <canvas id="overlay" class="overlay"></canvas>
+    </div>
+
+    <div class="metrics">
+      <div class="metric"><div class="k">primary angle</div><div class="v" id="mAngle">—</div></div>
+      <div class="metric"><div class="k">reps in buffer</div><div class="v" id="mReps">—</div></div>
+      <div class="metric"><div class="k">frames buffered</div><div class="v" id="mFrames">0</div></div>
+      <div class="metric"><div class="k">pose detection</div><div class="v" id="mRate">—</div></div>
+    </div>
+    <p class="note" id="hint">Pick an exercise, then start the camera or load a clip. Frames are sampled at 10 fps — the same rate used in training.</p>
+  </section>
+
+  <aside class="panel">
+    <div class="verdict">
+      <div class="label">form verdict</div>
+      <div class="big" id="vLabel">—</div>
+      <div class="sub" id="vSub">Analyse a set to score it.</div>
+      <div class="bar"><i id="vBar"></i></div>
+    </div>
+
+    <table class="mini" id="featTable">
+      <thead><tr><th>measurement</th><th>value</th></tr></thead>
+      <tbody></tbody>
+    </table>
+
+    <div class="row" style="margin-top:14px">
+      <button id="btnSelfTest">Run parity self-test</button>
+      <button id="btnExplain">Show JSON</button>
+    </div>
+    <div class="log" id="log">Self-test compares the JavaScript feature extractor against the Python one that produced the training data.</div>
+  </aside>
+</main>
+
+<script type="module">
+/* ------------------------------------------------------------------ *
+ * 1. Feature extraction — ported 1:1 from ml/fitness_features.py,
+ *    ml/experiment_clip.py and ml/experiment_repmetry.py.
+ *    Any change here must be mirrored there (the self-test will fail).
+ * ------------------------------------------------------------------ */
+const L = {
+  l_shoulder:11, r_shoulder:12, l_elbow:13, r_elbow:14, l_wrist:15, r_wrist:16,
+  l_hip:23, r_hip:24, l_knee:25, r_knee:26, l_ankle:27, r_ankle:28,
+  l_foot:31, r_foot:32
+};
+const PRIMARY_ANGLE = { squat:'knee_angle_mean', bicep_curl:'elbow_angle_mean', push_up:'elbow_angle_mean' };
+
+const sub2 = (p,a,b)=>[p[b].x-p[a].x, p[b].y-p[a].y];
+const norm2 = v=>Math.hypot(v[0],v[1]);
+function angleAt(p,a,b,c){
+  const v1=sub2(p,b,a), v2=sub2(p,b,c);
+  const d=(v1[0]*v2[0]+v1[1]*v2[1])/(Math.max(norm2(v1)*norm2(v2),1e-6));
+  return Math.acos(Math.min(1,Math.max(-1,d)))*180/Math.PI;
+}
+function signedBend(p,a,b,c){
+  const v1=sub2(p,b,a), v2=sub2(p,b,c);
+  const cross=v1[0]*v2[1]-v1[1]*v2[0];
+  return Math.sign(cross)*(180-angleAt(p,a,b,c));
+}
+function frameFeatures(p){
+  const hipC={x:(p[L.l_hip].x+p[L.r_hip].x)/2, y:(p[L.l_hip].y+p[L.r_hip].y)/2};
+  const shoC={x:(p[L.l_shoulder].x+p[L.r_shoulder].x)/2, y:(p[L.l_shoulder].y+p[L.r_shoulder].y)/2};
+  const torsoLen=Math.max(Math.hypot(shoC.x-hipC.x, shoC.y-hipC.y),1e-6);
+
+  const kneeL=angleAt(p,L.l_hip,L.l_knee,L.l_ankle), kneeR=angleAt(p,L.r_hip,L.r_knee,L.r_ankle);
+  const hipL =angleAt(p,L.l_shoulder,L.l_hip,L.l_knee), hipR=angleAt(p,L.r_shoulder,L.r_hip,L.r_knee);
+  const elbL =angleAt(p,L.l_shoulder,L.l_elbow,L.l_wrist), elbR=angleAt(p,L.r_shoulder,L.r_elbow,L.r_wrist);
+  const shL  =angleAt(p,L.l_elbow,L.l_shoulder,L.l_hip), shR=angleAt(p,L.r_elbow,L.r_shoulder,L.r_hip);
+  const ankL =angleAt(p,L.l_knee,L.l_ankle,L.l_foot);
+  const ankY=(p[L.l_ankle].y+p[L.r_ankle].y)/2, shoY=(p[L.l_shoulder].y+p[L.r_shoulder].y)/2;
+  const sbL=signedBend(p,L.l_hip,L.l_knee,L.l_ankle), sbR=signedBend(p,L.r_hip,L.r_knee,L.r_ankle);
+
+  return {
+    knee_angle_mean:(kneeL+kneeR)/2,
+    knee_angle_diff:Math.abs(kneeL-kneeR),
+    hip_angle_mean:(hipL+hipR)/2,
+    elbow_angle_mean:(elbL+elbR)/2,
+    elbow_angle_diff:Math.abs(elbL-elbR),
+    shoulder_angle_mean:(shL+shR)/2,
+    ankle_angle_l:ankL,
+    torso_inclination:Math.acos(Math.min(1,Math.max(-1,Math.abs(shoC.y-hipC.y)/torsoLen)))*180/Math.PI,
+    shoulder_to_hip_x:(shoC.x-hipC.x)/torsoLen,
+    knee_bend_abs_mean:(Math.abs(sbL)+Math.abs(sbR))/2,
+    knee_bend_abs_diff:Math.abs(Math.abs(sbL)-Math.abs(sbR)),
+    knee_width_ratio:Math.abs(p[L.l_knee].x-p[L.r_knee].x)/torsoLen,
+    ankle_width_ratio:Math.abs(p[L.l_ankle].x-p[L.r_ankle].x)/torsoLen,
+    hip_height_norm:(ankY-hipC.y)/torsoLen,
+    shoulder_height_norm:(ankY-shoC.y)/torsoLen,
+    wrist_height_l:(shoY-p[L.l_wrist].y)/torsoLen,
+    wrist_height_r:(shoY-p[L.r_wrist].y)/torsoLen
+  };
+}
+
+/* numpy-compatible linear percentile + population std */
+function pct(arr,q){
+  const a=arr.filter(Number.isFinite).slice().sort((x,y)=>x-y);
+  if(!a.length) return NaN;
+  if(a.length===1) return a[0];
+  const h=(a.length-1)*q/100, lo=Math.floor(h), hi=Math.ceil(h);
+  return a[lo]+(h-lo)*(a[hi]-a[lo]);
+}
+const mean=a=>a.reduce((s,x)=>s+x,0)/a.length;
+const std=a=>{const m=mean(a); return Math.sqrt(a.reduce((s,x)=>s+(x-m)**2,0)/a.length);};
+const mn=a=>Math.min(...a), mx=a=>Math.max(...a);
+function absDiffMean(a){ if(a.length<2) return 0; let s=0; for(let i=1;i<a.length;i++) s+=Math.abs(a[i]-a[i-1]); return s/(a.length-1); }
+
+function repFeatures(angle, t, exercise){
+  const fin=angle.filter(Number.isFinite);
+  const out={rep_rate_per_sec:NaN, angle_range_clip:NaN, rep_period_mean:NaN,
+             rep_period_std:NaN, rep_period_cv:NaN, rep_period_min:NaN,
+             rep_period_max:NaN, frac_below_25pct:NaN, frac_above_75pct:NaN,
+             frac_mid:NaN, rom_per_rep:NaN};
+  if(fin.length<10) return out;
+  const low=pct(fin,15), high=pct(fin,85);
+  out.angle_range_clip = mx(fin)-mn(fin);
+  if(!(high-low>=8)) return out;
+
+  const state={s:'top'}; const events=[];
+  for(let i=0;i<angle.length;i++){
+    const v=angle[i]; if(!Number.isFinite(v)) continue;
+    if(state.s==='top' && v<=low) state.s='bottom';
+    else if(state.s==='bottom' && v>=high){ state.s='top'; events.push(t[i]); }
+  }
+  const n=events.length, dur=t[t.length-1]-t[0];
+  out.rep_rate_per_sec = dur>0 ? n/dur : NaN;
+  if(n>=2){
+    const per=[]; for(let i=1;i<events.length;i++) per.push(events[i]-events[i-1]);
+    const m=mean(per);
+    out.rep_period_mean=m; out.rep_period_std=std(per);
+    out.rep_period_cv = m ? std(per)/m : NaN;
+    out.rep_period_min=mn(per); out.rep_period_max=mx(per);
+    const span=high-low;
+    if(span>1e-6){
+      const nm=angle.map(v=>Number.isFinite(v)?(v-low)/span:NaN).filter(Number.isFinite);
+      out.frac_below_25pct=nm.filter(v=>v<0.25).length/nm.length;
+      out.frac_above_75pct=nm.filter(v=>v>0.75).length/nm.length;
+      out.frac_mid=nm.filter(v=>v>=0.25&&v<=0.75).length/nm.length;
+    }
+  }
+  if(n>=1 && Number.isFinite(out.angle_range_clip)) out.rom_per_rep=out.angle_range_clip/n;
+  return out;
+}
+
+function clipFeatures(frames, exercise){
+  const per=frames.map(f=>frameFeatures(f.p));
+  const col=k=>per.map(o=>o[k]).filter(Number.isFinite);
+  const block=(k,prefix)=>{
+    const a=col(k); const o={};
+    o[prefix+'_min']=a.length?mn(a):NaN; o[prefix+'_max']=a.length?mx(a):NaN;
+    o[prefix+'_rom']=a.length?mx(a)-mn(a):NaN; o[prefix+'_std']=a.length?std(a):NaN;
+    o[prefix+'_iqr']=a.length?pct(a,75)-pct(a,25):NaN;
+    return o;
+  };
+  const f={};
+  Object.assign(f, block('knee_angle_mean','knee'), block('hip_angle_mean','hip'),
+                    block('elbow_angle_mean','elbow'), block('shoulder_angle_mean','shoulder'),
+                    block('ankle_angle_l','ankle'));
+  const torso=col('torso_inclination'), sway=col('shoulder_to_hip_x');
+  f.torso_mean=mean(torso); f.torso_max=mx(torso); f.torso_std=std(torso); f.torso_rom=mx(torso)-mn(torso);
+  f.sway_std=std(sway); f.sway_maxabs=Math.max(...sway.map(Math.abs)); f.sway_range=mx(sway)-mn(sway);
+  const kdev=col('knee_bend_abs_mean'); f.knee_dev_mean=mean(kdev); f.knee_dev_max=mx(kdev);
+  f.knee_dev_asym_mean=mean(col('knee_bend_abs_diff'));
+  const kw=col('knee_width_ratio'); f.knee_width_min=mn(kw); f.knee_width_max=mx(kw);
+  f.ankle_width_mean=mean(col('ankle_width_ratio'));
+  const hd=col('hip_height_norm'); f.hip_drop_range=mx(hd)-mn(hd); f.hip_drop_min=mn(hd);
+  const sd=col('shoulder_height_norm'); f.shoulder_drop_range=mx(sd)-mn(sd);
+  f.knee_lr_diff_mean=mean(col('knee_angle_diff'));
+  f.elbow_lr_diff_mean=mean(col('elbow_angle_diff'));
+  const wl=col('wrist_height_l'), wr=col('wrist_height_r');
+  f.wrist_l_range=mx(wl)-mn(wl); f.wrist_r_range=mx(wr)-mn(wr);
+  f.wrist_l_max=mx(wl); f.wrist_r_max=mx(wr);
+  f.knee_vel_absmean=absDiffMean(col('knee_angle_mean'));
+  f.elbow_vel_absmean=absDiffMean(col('elbow_angle_mean'));
+  Object.assign(f, repFeatures(col(PRIMARY_ANGLE[exercise]), frames.map(x=>x.t), exercise));
+  return f;
+}
+
+function featureVector(frames, exercise, order){
+  const f=clipFeatures(frames, exercise);
+  return Float32Array.from(order.map(c=>{
+    const v=f[c]; return (v===undefined||v===null||Number.isNaN(v))?NaN:v;
+  }));
+}
+
+/* ------------------------------------------------------------------ *
+ * 2. App
+ * ------------------------------------------------------------------ */
+const $=id=>document.getElementById(id);
+const state={ landmarker:null, sessions:{}, meta:null, order:[], frames:[],
+              running:false, raf:0, video:null, lastSample:0, lastTs:0, exercise:'squat' };
+
+function log(msg,cls){
+  const el=$('log'); el.innerHTML = cls?`<span class="${cls}">${msg}</span>`:msg;
+}
+const status=s=>{$('status').textContent=s;};
+
+async function loadModels(){
+  status('loading models…');
+  state.meta = await (await fetch('models/model_metadata.json')).json();
+  state.order = state.meta.feature_order;
+  const ort = await import('https://cdn.jsdelivr.net/npm/onnxruntime-web@1.19.2/dist/ort.min.mjs');
+  ort.env.wasm.wasmPaths='https://cdn.jsdelivr.net/npm/onnxruntime-web@1.19.2/dist/';
+  state.ort = ort;
+  for(const ex of ['squat','bicep_curl','push_up']){
+    state.sessions[ex] = await ort.InferenceSession.create(
+      `models/form_classifier_${ex}.onnx`, {executionProviders:['wasm']});
+  }
+  const vision = await import('https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/vision_bundle.mjs');
+  const fileset = await vision.FilesetResolver.forVisionTasks(
+    'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm');
+  state.landmarker = await vision.PoseLandmarker.createFromOptions(fileset,{
+    baseOptions:{ modelAssetPath:
+      'https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_full/float16/latest/pose_landmarker_full.task',
+      delegate:'GPU' },
+    runningMode:'VIDEO', numPoses:1,
+    minPoseDetectionConfidence:0.3, minPosePresenceConfidence:0.3, minTrackingConfidence:0.3
+  });
+  status('ready');
+  $('hint').textContent='Models loaded. Start the camera or load a clip, then press “Analyse set”.';
+}
+
+async function score(exercise, frames){
+  const vec = featureVector(frames, exercise, state.order);
+  const sess = state.sessions[exercise];
+  const inName = sess.inputNames?.[0] ?? 'input';
+  const out = await sess.run({[inName]: new state.ort.Tensor('float32', vec, [1, state.order.length])});
+  const key = Object.keys(out).find(k=>/probab/i.test(k)) ?? sess.outputNames?.[0];
+  const probs = out[key].data;
+  return {pGood: probs[1], pBad: probs[0], features: clipFeatures(frames, exercise)};
+}
+
+function renderVerdict(exercise, pGood){
+  const thr = state.meta.thresholds[exercise];
+  const good = pGood >= thr;
+  $('vLabel').textContent = good ? 'GOOD FORM' : 'NEEDS WORK';
+  $('vLabel').style.color = good ? 'var(--good)' : 'var(--bad)';
+  $('vSub').textContent = `p(GOOD) = ${pGood.toFixed(3)} · shipped threshold ${thr}`;
+  $('vBar').style.width = `${Math.round(pGood*100)}%`;
+}
+
+function renderTable(f){
+  const dur = state.frames.length * 0.1;
+  const reps = Number.isFinite(f.rep_rate_per_sec) ? Math.round(f.rep_rate_per_sec * dur) : null;
+  const rows=[
+    ['range of motion (primary)', f.angle_range_clip?.toFixed(1)+'°'],
+    ['reps detected', reps===null ? '—' : `${reps} in ${dur.toFixed(0)} s`],
+    ['rep rhythm CV', Number.isFinite(f.rep_period_cv)?f.rep_period_cv.toFixed(2):'—'],
+    ['torso lean max', f.torso_max?.toFixed(1)+'°'],
+    ['torso sway (std)', f.sway_std?.toFixed(3)],
+    ['knee tracking dev max', f.knee_dev_max?.toFixed(1)+'°'],
+    ['hip drop range', f.hip_drop_range?.toFixed(3)],
+    ['L/R knee asymmetry', f.knee_lr_diff_mean?.toFixed(1)+'°']
+  ];
+  $('featTable').querySelector('tbody').innerHTML =
+    rows.map(([k,v])=>`<tr><td>${k}</td><td class="accent">${v ?? '—'}</td></tr>`).join('');
+  const st=document.querySelector('.stage');
+  if(st.dataset.native) st.dataset.shown=st.dataset.native;
+}
+
+/* The video is object-fit:contain inside the stage, so it does NOT fill it.
+ * Map normalised landmark coords into the letterboxed video rectangle, not the
+ * element box - otherwise the skeleton drifts on any non-4:3 clip (e.g. a
+ * 2160x4096 portrait phone video). */
+function videoRect(){
+  const v=$('video'), c=$('overlay');
+  const vw=v.videoWidth||1, vh=v.videoHeight||1;
+  const cw=c.clientWidth||1, ch=c.clientHeight||1;
+  const scale=Math.min(cw/vw, ch/vh);
+  const w=vw*scale, h=vh*scale;
+  return {x:(cw-w)/2, y:(ch-h)/2, w, h};
+}
+
+function drawOverlay(lms){
+  const v=$('video'), c=$('overlay');
+  if(c.width!==v.clientWidth||c.height!==v.clientHeight){
+    c.width=v.clientWidth; c.height=v.clientHeight;
+  }
+  const ctx=c.getContext('2d');
+  ctx.clearRect(0,0,c.width,c.height);
+  if(!lms) return;
+  const r=videoRect();
+  const X=i=>r.x+lms[i].x*r.w, Y=i=>r.y+lms[i].y*r.h;
+  const EDGES=[[11,12],[11,13],[13,15],[12,14],[14,16],[11,23],[12,24],[23,24],
+               [23,25],[25,27],[24,26],[26,28],[27,31],[28,32]];
+  const lw=Math.max(2, r.w/400);
+  ctx.strokeStyle='#7cc4ff'; ctx.lineWidth=lw; ctx.lineJoin='round';
+  for(const [a,b] of EDGES){
+    ctx.beginPath(); ctx.moveTo(X(a),Y(a)); ctx.lineTo(X(b),Y(b)); ctx.stroke();
+  }
+  ctx.fillStyle='#37d67a';
+  for(const i of Object.values(L)){ ctx.beginPath();
+    ctx.arc(X(i), Y(i), Math.max(2.5, r.w/320), 0, 7); ctx.fill(); }
+}
+
+/* Make the stage follow the clip's real aspect ratio so portrait videos are not
+ * squeezed into a 4:3 box (which is what made the skeleton look rescaled). */
+function fitStageTo(video){
+  const stage=document.querySelector('.stage');
+  const vw=video.videoWidth, vh=video.videoHeight;
+  if(!vw||!vh) return;
+  const aspect=Math.min(Math.max(vw/vh,0.45),2.6);
+  stage.style.aspectRatio=String(aspect);
+  stage.dataset.native=`${vw}\u00d7${vh}`;
+}
+
+function loop(){
+  if(!state.running) return;
+  const v=$('video');
+  if(v.readyState>=2){
+    const now = v.srcObject ? performance.now() : v.currentTime*1000;
+    // Cap detection at ~15 Hz: 4K 30 fps clips would otherwise be decoded and
+    // inferred 60x/s for no benefit, since we only sample features at 10 Hz.
+    const sinceDetect = performance.now() - (state.lastDetect||0);
+    if(now > state.lastTs + 1 && sinceDetect >= 66){
+      state.lastDetect = performance.now();
+      state.lastTs = now;
+      let res=null;
+      try{ res = state.landmarker.detectForVideo(v, now); }catch(e){}
+      const lms = res?.landmarks?.[0] ?? null;
+      drawOverlay(lms);
+      if(lms){
+        const p = lms.map(pt=>({x:pt.x,y:pt.y,z:pt.z,visibility:pt.visibility ?? 1}));
+        const wall = Date.now();
+        if(wall - state.lastSample >= 100){   // sample at 10 fps like training
+          state.lastSample = wall;
+          state.frames.push({t: state.frames.length*0.1, p});
+          if(state.frames.length>1200) state.frames.shift();  // keep ~2 min
+          const ff=frameFeatures(p);
+          $('mAngle').textContent = ff[PRIMARY_ANGLE[state.exercise]].toFixed(0)+'°';
+        }
+      }
+      const n=state.frames.length;
+      $('mFrames').textContent=n;
+      $('mRate').textContent = n? 'live':'—';
+      if(n>12){
+        const f=clipFeatures(state.frames, state.exercise);
+        if(Number.isFinite(f.rep_rate_per_sec))
+          $('mReps').textContent=Math.round(f.rep_rate_per_sec*(state.frames[n-1].t));
+      }
+    }
+  }
+  state.raf=requestAnimationFrame(loop);
+}
+
+async function startCamera(){
+  state.frames=[]; state.lastSample=0; state.lastTs=0;
+  const stream=await navigator.mediaDevices.getUserMedia({video:{width:1280,height:720}, audio:false});
+  const v=$('video'); v.srcObject=stream; v.controls=false; await v.play();
+  state.video='camera';
+  state.running=true; $('btnStop').disabled=false; $('btnAnalyse').disabled=false;
+  $('btnReset').disabled=false; $('btnCam').disabled=true;
+  status('camera live'); loop();
+}
+
+async function loadVideoFile(file){
+  state.frames=[]; state.lastSample=0; state.lastTs=0; state.lastDetect=0;
+  const v=$('video'); v.srcObject=null; v.src=URL.createObjectURL(file);
+  v.controls=true; v.loop=true;
+  await new Promise(res=>{
+    if(v.readyState>=1) return res();
+    v.onloadedmetadata=()=>res();
+  });
+  fitStageTo(v);
+  await v.play();
+  state.video='file';
+  state.running=true; $('btnStop').disabled=false; $('btnAnalyse').disabled=false;
+  $('btnReset').disabled=false; $('btnCam').disabled=true;
+  status('video playing'); loop();
+}
+
+function stopAll(){
+  state.running=false; cancelAnimationFrame(state.raf);
+  const v=$('video'); if(v.srcObject){ v.srcObject.getTracks().forEach(t=>t.stop()); v.srcObject=null; }
+  $('btnStop').disabled=true; $('btnCam').disabled=false; status('stopped');
+}
+
+/* ---- built-in parity self-test against the Python-generated fixture ---- */
+async function selfTest(){
+  log('loading fixture…');
+  const fx = await (await fetch('model-check-fixture.json')).json();
+  let worstFeat=0, worstP=0, lines=[];
+  for(const [ex,data] of Object.entries(fx.fixtures)){
+    const frames = data.landmarks.map((p,i)=>({t:data.t[i],
+      p:p.map(q=>({x:q[0],y:q[1],z:q[2],visibility:q[3]}))}));
+    const f = clipFeatures(frames, ex);
+    let worst=0, worstName='';
+    for(const c of fx.feature_order){
+      const a=data.expected[c], b=f[c];
+      if(a===null && !Number.isFinite(b)) continue;
+      if(a===null || !Number.isFinite(b)) { worst=Infinity; worstName=c; break; }
+      const d=Math.abs(a-b);
+      if(d>worst){worst=d;worstName=c;}
+    }
+    const s = await score(ex, frames);
+    const dp = Math.abs(s.pGood - data.expected_p_good);
+    worstFeat=Math.max(worstFeat,worst); worstP=Math.max(worstP,dp);
+    // Feature tolerance is 0.05 deg, not 1e-6: the trainer works in float32 and the
+    // browser in float64, and acos() is ill-conditioned for near-straight limbs, so
+    // the last bits of the landmark values move an angle by ~1e-2 deg. What must
+    // match tightly is the model output.
+    const pass = worst<0.05 && dp<1e-5;
+    lines.push(`${pass?'<span class="ok">PASS</span>':'<span class="fail">FAIL</span>'}  ${ex.padEnd(11)} ` +
+      `max feature Δ=${worst.toExponential(2)} (${worstName})  p(GOOD) Δ=${dp.toExponential(2)} ` +
+      `[js ${s.pGood.toFixed(6)} vs py ${data.expected_p_good.toFixed(6)}]`);
+    if(ex===state.exercise) renderTable(f);
+  }
+  const all = worstFeat<0.05 && worstP<1e-5;
+  log(lines.join('\n') +
+      `\n\n${all?'<span class="ok">Parity OK</span> — the browser reproduces the training features '
+             +'and the model output.'
+             :'<span class="fail">Parity broken</span> — do not trust the browser prediction.'}` +
+      '\n\nTolerance: features 0.05 deg (float32 trainer vs float64 browser; acos of a ' +
+      'near-straight joint amplifies the last bits), model output 1e-5.');
+}
+
+/* ---- wiring ---- */
+$('exercise').addEventListener('change',e=>{
+  state.exercise=e.target.value; state.frames=[];
+  $('vLabel').textContent='—'; $('vLabel').style.color='var(--ink)';
+  $('vSub').textContent='Analyse a set to score it.'; $('vBar').style.width='0';
+});
+
+$('btnCam').onclick = ()=>startCamera().catch(err=>{ status('camera error'); log(String(err),'fail'); });
+$('file').onchange = e=>{ const f=e.target.files?.[0]; if(f) loadVideoFile(f); };
+$('btnStop').onclick = stopAll;
+$('btnReset').onclick = ()=>{ state.frames=[]; $('mFrames').textContent='0'; $('mReps').textContent='—';
+  $('mRate').textContent='—'; log('buffer cleared'); };
+$('btnSelfTest').onclick = ()=>selfTest().catch(e=>log(String(e),'fail'));
+$('btnExplain').onclick = ()=>{
+  const f=clipFeatures(state.frames, state.exercise);
+  const vec=featureVector(state.frames, state.exercise, state.order);
+  const obj={}; state.order.forEach((c,i)=>{ obj[c]=Number.isFinite(vec[i])?Number(vec[i].toFixed(5)):null; });
+  log(`exercise: ${state.exercise}\nframes: ${state.frames.length}\n\n`+JSON.stringify(obj,null,1));
+};
+
+$('btnAnalyse').onclick = async ()=>{
+  if(state.frames.length<20){ log('Not enough buffered frames yet — record a few seconds first.','fail'); return; }
+  status('scoring…');
+  const ex=state.exercise;
+  try{
+    const s=await score(ex, state.frames);
+    renderVerdict(ex, s.pGood);
+    renderTable(s.features);
+    status('scored');
+    log(`set scored: ${state.frames.length} frames (${(state.frames.length*0.1).toFixed(1)} s)\n`+
+        `p(BAD)=${s.pBad.toFixed(4)}  p(GOOD)=${s.pGood.toFixed(4)}  threshold=${state.meta.thresholds[ex]}`);
+  }catch(e){ status('scoring failed'); log(String(e),'fail'); }
+};
+
+window.addEventListener('resize',()=>{ const v=$('video'); if(v.videoWidth) fitStageTo(v); drawOverlay(null); });
+$('video').addEventListener('loadedmetadata',e=>fitStageTo(e.target));
+
+loadModels().catch(e=>{ status('load failed'); log(String(e),'fail'); });
+</script>
+</body>
+</html>

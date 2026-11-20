@@ -1,0 +1,31 @@
+{
+  "windows": 22662,
+  "frames": 119503,
+  "videos": 444,
+  "videos_with_windows": 444,
+  "features": 291,
+  "window_sec": 2.0,
+  "stride_sec": 0.5,
+  "per_exercise": {
+    "squat": {
+      "windows": 8351,
+      "good": 4194,
+      "bad": 4157,
+      "subjects": 25
+    },
+    "bicep_curl": {
+      "windows": 8834,
+      "good": 4475,
+      "bad": 4359,
+      "subjects": 25
+    },
+    "push_up": {
+      "windows": 5477,
+      "good": 2823,
+      "bad": 2654,
+      "subjects": 24
+    }
+  },
+  "pose_detection_rate_mean": 0.9831236486486485,
+  "pose_detection_rate_min": 0.6875
+}
