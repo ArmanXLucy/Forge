@@ -96,10 +96,10 @@ export default function AdminMissionsPage() {
                   aria-checked={enabled}
                   disabled={saving === mission.id}
                   onClick={() => void toggle(mission.id, !enabled)}
-                  className={cn('relative h-7 w-12 shrink-0 rounded-full transition-colors', enabled ? 'bg-orange-500' : 'bg-charcoal/15', saving === mission.id && 'opacity-50')}
+                  className={cn('relative h-7 w-12 shrink-0 rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500/40 focus-visible:ring-offset-2', enabled ? 'bg-orange-500' : 'bg-charcoal/15', saving === mission.id && 'opacity-50')}
                   aria-label={`${enabled ? 'Hide' : 'Show'} ${mission.title}`}
                 >
-                  <span className={cn('absolute top-1 h-5 w-5 rounded-full bg-white shadow-sm transition-transform', enabled ? 'left-6' : 'left-1')} />
+                  <span className={cn('absolute left-1 top-1 h-5 w-5 rounded-full bg-white shadow-sm transition-transform duration-200 ease-out', enabled ? 'translate-x-5' : 'translate-x-0')} />
                 </button>
               </li>
             )

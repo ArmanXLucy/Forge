@@ -247,7 +247,7 @@ export function EntityManager({
                     {field.options?.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
                   </select>
                 ) : field.type === 'checkbox' ? (
-                  <span className="flex min-h-[42px] items-center gap-2 rounded-xl border border-charcoal/12 bg-white px-3">
+                  <label className="flex min-h-[42px] cursor-pointer items-center gap-2 rounded-xl border border-charcoal/12 bg-white px-3">
                     <input
                       type="checkbox"
                       checked={values[field.key] === true}
@@ -255,7 +255,7 @@ export function EntityManager({
                       className="h-4 w-4 accent-orange-500"
                     />
                     <span className="text-[11px] text-charcoal/55">{field.hint ?? 'Enabled'}</span>
-                  </span>
+                  </label>
                 ) : (
                   <input
                     type={field.type === 'number' ? 'number' : 'text'}
