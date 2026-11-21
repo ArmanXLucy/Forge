@@ -43,6 +43,7 @@ import { buttonClasses } from '../../components/ui/Button'
 import { MISSION_ICONS } from '../../components/navigation/dashboardNav'
 import { useProfileStore, useProfileStats } from '../../store/useProfileStore'
 import { useActivityStore } from '../../store/useActivityStore'
+import { useDataStatus } from '../../hooks/useDataStatus'
 import { GOAL_LABELS, WEEKDAYS } from '../../lib/constants'
 import { formatDate } from '../../lib/utils'
 import { nextMission, unlockedAchievements } from '../../utils/missions'
@@ -103,6 +104,7 @@ function ActivityTooltip({
 }
 
 export default function OverviewPage() {
+  const { source, label, isCloud } = useDataStatus()
   const profile = useProfileStore((s) => s.profile)
   const progress = useProfileStore((s) => s.progress)
   const { completion, xp, completedMissions } = useProfileStats()
@@ -320,7 +322,7 @@ export default function OverviewPage() {
         <SectionCard
           eyebrow="Quick actions"
           title="Keep the day moving."
-          action={<SourceBadge source="local" label="Local actions" />}
+          action={<SourceBadge source={source} label={isCloud ? 'Cloud account' : 'Local actions'} />}
         >
           <div className="grid grid-cols-2 gap-2.5">
             {[
@@ -356,16 +358,16 @@ export default function OverviewPage() {
           value={workouts.length}
           suffix="total"
           note={`${totalMinutes} min recorded`}
-          source={workouts.length ? 'local' : 'empty'}
+          source={workouts.length ? source : 'empty'}
         />
         <StatCard
           icon={Activity}
           label="This week"
           value={weekMinutes}
           suffix="min"
-          note={`${weekWorkouts.length} sessions · saved locally`}
+          note={`${weekWorkouts.length} sessions · ${isCloud ? 'synced' : 'saved locally'}`}
           accent
-          source={weekWorkouts.length ? 'local' : 'empty'}
+          source={weekWorkouts.length ? source : 'empty'}
         />
         <StatCard
           icon={Flame}
@@ -373,7 +375,7 @@ export default function OverviewPage() {
           value={streak}
           suffix={streak === 1 ? 'day' : 'days'}
           note={streak ? 'Workouts, missions or AI sessions' : 'Complete one action today'}
-          source={streak ? 'local' : 'empty'}
+          source={streak ? source : 'empty'}
         />
         <StatCard
           icon={Target}
@@ -381,7 +383,7 @@ export default function OverviewPage() {
           value={completion}
           suffix="%"
           note={`${completedMissions} of 7 missions complete`}
-          source="local"
+          source={source}
         />
       </section>
 
@@ -403,7 +405,7 @@ export default function OverviewPage() {
         >
           <div className="flex flex-wrap items-baseline gap-2">
             <span className="text-[11px] text-charcoal/40">
-              {chartSessions} {chartSessions === 1 ? 'session' : 'sessions'} logged · saved on this device
+              {chartSessions} {chartSessions === 1 ? 'session' : 'sessions'} logged · {isCloud ? 'synced to your account' : 'saved on this device'}
             </span>
           </div>
           <div className="mt-4 h-[230px] w-full min-w-0">
@@ -457,7 +459,7 @@ export default function OverviewPage() {
         <SectionCard
           eyebrow="Goal progress"
           title={profile ? GOAL_LABELS[profile.goal] : 'Set your goal'}
-          action={<SourceBadge source="local" label="Profile" />}
+          action={<SourceBadge source={source} label="Profile" />}
         >
           <div className="flex items-center gap-4">
             <ProgressRing value={completion} size={82} strokeWidth={7}>
@@ -519,7 +521,7 @@ export default function OverviewPage() {
         <SectionCard
           eyebrow="Recent activity"
           title="What you have done lately."
-          action={<SourceBadge source={recentActivity.length ? 'local' : 'empty'} />}
+          action={<SourceBadge source={recentActivity.length ? source : 'empty'} />}
         >
           {recentActivity.length ? (
             <ul className="divide-y divide-charcoal/5">
@@ -624,10 +626,10 @@ export default function OverviewPage() {
 
       <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 text-[9px] uppercase tracking-[0.1em] text-charcoal/25">
         <span className="inline-flex items-center gap-1.5">
-          <Plus className="h-3 w-3" /> Workouts, meals, measurements and AI sessions save on this device only.
+          <Plus className="h-3 w-3" /> {isCloud ? 'Workouts, meals, measurements and AI sessions sync to Firestore.' : 'Workouts, meals, measurements and AI sessions save on this device only.'}
         </span>
         <span className="inline-flex items-center gap-1.5">
-          <Clock3 className="h-3 w-3" /> Profile missions update immediately.
+          <Clock3 className="h-3 w-3" /> Profile missions and preferences update immediately.
         </span>
       </div>
     </div>

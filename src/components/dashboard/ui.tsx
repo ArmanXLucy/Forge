@@ -183,12 +183,12 @@ export function SourceBadge({
 }) {
   const config = {
     live: {
-      label: label ?? 'Live',
+      label: label ?? 'Synced to your account',
       className: 'border-emerald-600/20 bg-emerald-50 text-emerald-700',
       dot: 'bg-emerald-500',
     },
     local: {
-      label: label ?? 'Saved on this device',
+      label: label ?? 'Cached on this device',
       className: 'border-charcoal/12 bg-charcoal/[0.04] text-charcoal/45',
       dot: 'bg-charcoal/40',
     },

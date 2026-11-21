@@ -24,6 +24,7 @@ import { toast } from 'sonner'
 import { PageHeader, ProgressBar, SectionCard, SourceBadge } from '../../components/dashboard/ui'
 import { Button, buttonClasses } from '../../components/ui/Button'
 import { useActivityStore } from '../../store/useActivityStore'
+import { useDataStatus } from '../../hooks/useDataStatus'
 import { EXERCISES } from '../../features/ai-coach/types'
 import type { AIVerdict, ExerciseKey, Landmark, PoseFrame, ScoreResult } from '../../features/ai-coach/types'
 import { loadAIClient, loadPoseLandmarker, type AIClient } from '../../features/ai-coach/lib/modelClient'
@@ -110,6 +111,7 @@ function buildCues(exercise: ExerciseKey, score: ScoreResult) {
 }
 
 export default function AICoachPage() {
+  const dataStatus = useDataStatus()
   const addAISession = useActivityStore((s) => s.addAISession)
   const aiSessions = useActivityStore((s) => s.aiSessions)
 
@@ -538,7 +540,7 @@ export default function AICoachPage() {
       source: source ?? 'camera',
     })
     setSaved(true)
-    toast.success('AI session saved on this device.')
+    toast.success(dataStatus.isCloud ? 'AI session saved to your account.' : 'AI session saved on this device.')
   }
 
   const stageStatus =
@@ -778,7 +780,7 @@ export default function AICoachPage() {
               <div className="rounded-xl border border-charcoal/10 bg-ivory/60 p-4">
                 <p className="text-[8px] font-bold uppercase tracking-[0.14em] text-charcoal/35">Timer</p>
                 <p className="mt-1 font-display uppercase text-3xl leading-none text-charcoal">{clock(elapsed)}</p>
-                <p className="mt-1 text-[9px] text-charcoal/35">Local session</p>
+                <p className="mt-1 text-[9px] text-charcoal/35">Session record</p>
               </div>
             </div>
 
@@ -915,7 +917,7 @@ export default function AICoachPage() {
       {phase === 'finished' && (
         <SectionCard
           eyebrow="Session summary"
-          title={saved ? 'Saved to your local history.' : 'Review before saving.'}
+          title={saved ? `Saved to your ${dataStatus.isCloud ? 'account' : 'local'} history.` : 'Review before saving.'}
           className="mt-4"
           action={<SourceBadge source={scores.length ? 'live' : 'empty'} label="Model output" />}
         >
@@ -1043,7 +1045,7 @@ export default function AICoachPage() {
           <Dumbbell className="h-3 w-3" /> Supports squat, bicep curl and push-up.
         </span>
         <span className="inline-flex items-center gap-1.5">
-          <Clock3 className="h-3 w-3" /> {aiSessions.length} AI sessions saved on this device.
+          <Clock3 className="h-3 w-3" /> {aiSessions.length} AI sessions saved {dataStatus.isCloud ? 'to your account' : 'on this device'}.
         </span>
         <span className="inline-flex items-center gap-1.5">
           <Gauge className="h-3 w-3" /> Model sampling: 10 fps · inference: local.

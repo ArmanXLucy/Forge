@@ -1,5 +1,6 @@
 import { initializeApp, type FirebaseApp } from 'firebase/app'
-import { getAuth, GoogleAuthProvider, type Auth } from 'firebase/auth'
+import { connectAuthEmulator, getAuth, GoogleAuthProvider, type Auth } from 'firebase/auth'
+import { connectFirestoreEmulator, getFirestore, type Firestore } from 'firebase/firestore'
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -28,20 +29,29 @@ export const isFirebaseConfigured = missingFirebaseVariables.length === 0
 
 let app: FirebaseApp | null = null
 let auth: Auth | null = null
+let firestore: Firestore | null = null
 let googleProvider: GoogleAuthProvider | null = null
 
 if (isFirebaseConfigured) {
   try {
     app = initializeApp(firebaseConfig)
     auth = getAuth(app)
+    firestore = getFirestore(app)
+    if (import.meta.env.DEV && import.meta.env.VITE_USE_FIREBASE_EMULATORS === 'true') {
+      connectAuthEmulator(auth, 'http://127.0.0.1:9099', { disableWarnings: true })
+      connectFirestoreEmulator(firestore, '127.0.0.1', 8080)
+    }
     googleProvider = new GoogleAuthProvider()
     googleProvider.setCustomParameters({ prompt: 'select_account' })
   } catch (error) {
     console.error('[firebase] Initialisation failed.', error)
     app = null
     auth = null
+    firestore = null
     googleProvider = null
   }
 }
 
-export { app, auth, googleProvider }
+const isFirestoreConfigured = Boolean(isFirebaseConfigured && firestore)
+
+export { app, auth, firestore, googleProvider, isFirestoreConfigured }

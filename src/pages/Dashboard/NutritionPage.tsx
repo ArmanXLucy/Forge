@@ -29,6 +29,7 @@ import { Button, buttonClasses } from '../../components/ui/Button'
 import { Modal } from '../../components/ui/Modal'
 import { DAILY_MEALS, NUTRITION_TARGETS } from '../../data/dashboard'
 import { useActivityStore } from '../../store/useActivityStore'
+import { useDataStatus } from '../../hooks/useDataStatus'
 import { dateKey, sumMeals } from '../../utils/activity'
 import { cn } from '../../lib/utils'
 
@@ -92,7 +93,7 @@ function MealDialog({
     })
     setSaving(false)
     setForm({ name: '', time: mealSlots[0], calories: '', protein: '', carbs: '', fat: '' })
-    toast.success('Meal saved on this device.')
+    toast.success('Meal saved.')
     onClose()
   }
 
@@ -108,7 +109,7 @@ function MealDialog({
       open={open}
       onClose={onClose}
       title="Log a meal"
-      description="Saved locally on this device. This is not a prescribed nutrition plan."
+      description="Saved to your nutrition log. This is not a prescribed nutrition plan."
       size="md"
       footer={
         <div className="flex justify-end gap-2">
@@ -189,6 +190,7 @@ function MealDialog({
 }
 
 export default function NutritionPage() {
+  const { source, label, isCloud } = useDataStatus()
   const meals = useActivityStore((s) => s.meals)
   const waterByDate = useActivityStore((s) => s.waterByDate)
   const setWater = useActivityStore((s) => s.setWater)
@@ -250,7 +252,7 @@ export default function NutritionPage() {
           suffix="kcal"
           note={`${dayMeals.length} meals · ${formatDayLabel(selectedDate)}`}
           accent
-          source={dayMeals.length ? 'local' : 'empty'}
+          source={dayMeals.length ? source : 'empty'}
         />
         <StatCard
           icon={Apple}
@@ -258,7 +260,7 @@ export default function NutritionPage() {
           value={totals.protein}
           suffix="g"
           note={`${proteinPercent}% of reference target`}
-          source={dayMeals.length ? 'local' : 'empty'}
+          source={dayMeals.length ? source : 'empty'}
         />
         <StatCard
           icon={Salad}
@@ -266,15 +268,15 @@ export default function NutritionPage() {
           value={`${totals.carbs} / ${totals.fat}`}
           suffix="g"
           note="logged today"
-          source={dayMeals.length ? 'local' : 'empty'}
+          source={dayMeals.length ? source : 'empty'}
         />
         <StatCard
           icon={Droplets}
           label="Hydration"
           value={waterLitres.toFixed(2)}
           suffix={`/ ${NUTRITION_TARGETS.water.toFixed(1)} L`}
-          note="saved on this device"
-          source={glasses ? 'local' : 'empty'}
+          note={isCloud ? 'synced to your account' : 'saved on this device'}
+          source={glasses ? source : 'empty'}
         />
       </div>
 
@@ -304,7 +306,7 @@ export default function NutritionPage() {
             <ChevronRight className="h-4 w-4" />
           </button>
         </div>
-        <SourceBadge source="local" label="Saved on this device" />
+        <SourceBadge source={source} label={label} />
       </div>
 
       <div className="mt-4 grid gap-4 xl:grid-cols-[1.5fr_1fr]">
@@ -461,7 +463,7 @@ export default function NutritionPage() {
               </button>
             </div>
             <p className="mt-2 text-[9px] text-charcoal/25">
-              Saved for {formatDayLabel(selectedDate)} on this device only.
+              {isCloud ? 'Synced for' : 'Saved for'} {formatDayLabel(selectedDate)} {isCloud ? 'to your account.' : 'on this device only.'}
             </p>
           </SectionCard>
 
@@ -503,7 +505,7 @@ export default function NutritionPage() {
         <SectionCard
           eyebrow="Weekly intake"
           title="Logged calories, last seven days."
-          action={<SourceBadge source={recentDays.some((day) => day.logged) ? 'local' : 'empty'} />}
+          action={<SourceBadge source={recentDays.some((day) => day.logged) ? source : 'empty'} />}
         >
           <div className="h-[210px] w-full min-w-0">
             {recentDays.some((day) => day.logged) ? (

@@ -15,6 +15,7 @@ import { Badge } from '../../components/ui/Badge'
 import { Button, buttonClasses } from '../../components/ui/Button'
 import { MISSION_ICONS } from '../../components/navigation/dashboardNav'
 import { useProfileStore, useProfileStats } from '../../store/useProfileStore'
+import { useDataStatus } from '../../hooks/useDataStatus'
 import { MISSIONS, ADVANCED_ASSESSMENTS, ACHIEVEMENTS } from '../../data/missions'
 import { effectiveStatus, nextMission, unlockedAchievements } from '../../utils/missions'
 import { cn } from '../../lib/utils'
@@ -42,6 +43,7 @@ const achievementIcons: Record<Achievement['icon'], typeof Award> = {
 }
 
 export default function MissionsPage() {
+  const { isCloud, label } = useDataStatus()
   const progress = useProfileStore((s) => s.progress)
   const profile = useProfileStore((s) => s.profile)
   const { completion, xp, completedMissions } = useProfileStats()
@@ -122,7 +124,7 @@ export default function MissionsPage() {
         <p>
           <strong className="font-semibold">Safety first.</strong> No personalised exercise or
           nutrition recommendations are generated until the Health Profile mission has been reviewed by
-          your coach. Sensitive answers in this frontend demo are never stored or sent anywhere.
+          your coach. Sensitive answers are never stored or sent anywhere by this build.
         </p>
       </div>
 
@@ -131,7 +133,7 @@ export default function MissionsPage() {
           <h2 id="mission-grid-heading" className="text-[13px] font-bold uppercase tracking-[0.14em] text-charcoal">
             Seven profile dimensions
           </h2>
-          <DemoDataBadge label="Status saved locally" />
+          <DemoDataBadge label={isCloud ? 'Status synced' : label} />
         </div>
         <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
           {MISSIONS.map((mission) => {

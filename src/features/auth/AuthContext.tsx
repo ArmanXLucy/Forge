@@ -44,8 +44,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setLoading(false)
       if (nextUser) {
         if (lastUid.current !== nextUser.uid) {
-          hydrate(nextUser.uid)
-          hydrateActivity(nextUser.uid)
+          void hydrate(nextUser.uid, {
+            cloud: !nextUser.isDemo,
+            email: nextUser.email,
+            displayName: nextUser.displayName,
+            photoURL: nextUser.photoURL,
+          })
+          void hydrateActivity(nextUser.uid, { cloud: !nextUser.isDemo })
         }
         lastUid.current = nextUser.uid
       } else {
@@ -60,24 +65,39 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signIn = useCallback(async (email: string, password: string) => {
     const next = await authService.signIn(email, password)
     setUser(next)
-    hydrate(next.uid)
-    hydrateActivity(next.uid)
+    void hydrate(next.uid, {
+      cloud: !next.isDemo,
+      email: next.email,
+      displayName: next.displayName,
+      photoURL: next.photoURL,
+    })
+    void hydrateActivity(next.uid, { cloud: !next.isDemo })
     lastUid.current = next.uid
   }, [hydrate, hydrateActivity])
 
   const signUp = useCallback(async (name: string, email: string, password: string) => {
     const next = await authService.signUp(name, email, password)
     setUser(next)
-    hydrate(next.uid)
-    hydrateActivity(next.uid)
+    void hydrate(next.uid, {
+      cloud: !next.isDemo,
+      email: next.email,
+      displayName: next.displayName,
+      photoURL: next.photoURL,
+    })
+    void hydrateActivity(next.uid, { cloud: !next.isDemo })
     lastUid.current = next.uid
   }, [hydrate, hydrateActivity])
 
   const signInWithGoogle = useCallback(async () => {
     const next = await authService.signInWithGoogle()
     setUser(next)
-    hydrate(next.uid)
-    hydrateActivity(next.uid)
+    void hydrate(next.uid, {
+      cloud: !next.isDemo,
+      email: next.email,
+      displayName: next.displayName,
+      photoURL: next.photoURL,
+    })
+    void hydrateActivity(next.uid, { cloud: !next.isDemo })
     lastUid.current = next.uid
   }, [hydrate, hydrateActivity])
 
@@ -96,8 +116,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const enterDemo = useCallback(() => {
     const demo = startDemoSession()
     setUser(demo)
-    hydrate(demo.uid)
-    hydrateActivity(demo.uid)
+    void hydrate(demo.uid, { cloud: false, email: demo.email, displayName: demo.displayName })
+    void hydrateActivity(demo.uid, { cloud: false })
     lastUid.current = demo.uid
   }, [hydrate, hydrateActivity])
 

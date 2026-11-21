@@ -63,8 +63,8 @@ function DemoPhotoUploader() {
         <div>
           <h3 className="text-[13px] font-semibold text-charcoal">Optional progress photos</h3>
           <p className="mt-1 text-[11px] leading-relaxed text-charcoal/45">
-            Demo only. A selected photo is previewed locally and never uploaded or stored. Secure
-            photo storage requires the Stage 2 backend.
+            Preview only. A selected photo is never uploaded or stored. Secure mission-photo storage
+            is not enabled in this build.
           </p>
         </div>
       </div>
@@ -177,7 +177,7 @@ export default function MissionDetailPage() {
 
   const saveForLater = () => {
     startMission(mission.id)
-    toast.success('Mission marked in progress. Answers are not stored in this demo.')
+    toast.success('Mission marked in progress. Answers are not stored.')
   }
 
   const fieldError = (id: string) =>
@@ -463,8 +463,8 @@ export default function MissionDetailPage() {
                   {mission.title} locked in<span className="text-orange-500">.</span>
                 </h2>
                 <p className="mt-2 max-w-lg text-[13px] leading-relaxed text-charcoal/50">
-                  Your status and XP have been updated. In this frontend demo, the answers you entered
-                  were intentionally not stored — secure backend storage arrives in Stage 2.
+                  Your status and XP have been updated. The answers you entered were intentionally not
+                  stored because secure medical storage is not enabled.
                 </p>
               </div>
             </div>
@@ -506,8 +506,8 @@ export default function MissionDetailPage() {
               {[
                 'Your completion percentage and XP update immediately across the dashboard.',
                 mission.sensitive
-                  ? 'Sensitive answers are discarded in this build. Your coach will collect them securely in Stage 2.'
-                  : 'Your answers stay in this demo session only; the backend will persist them in Stage 2.',
+                  ? 'Sensitive answers are discarded in this build. Your coach can collect them securely outside this form.'
+                  : 'Your answers stay in this session only and are not persisted.',
                 'Advanced assessments unlock after all seven missions are complete.',
               ].map((text) => (
                 <li key={text} className="flex items-start gap-2.5 text-[12px] leading-relaxed text-charcoal/55">
@@ -526,12 +526,12 @@ export default function MissionDetailPage() {
                 <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-orange-600" />
                 <div>
                   <p className="text-[12px] font-semibold text-orange-900">
-                    Sensitive mission — demo interaction only
+                    Sensitive mission — session only
                   </p>
                   <p className="mt-1 text-[11px] leading-relaxed text-orange-900/70">
                     Do not enter real medical documents or prescription details. Everything you type
                     here stays in this page memory and is discarded when you leave. Nothing is stored
-                    in localStorage or sent to a server.
+                    in browser storage, Firestore or Supabase.
                   </p>
                 </div>
               </div>
@@ -588,7 +588,7 @@ export default function MissionDetailPage() {
             <div className="mt-4 rounded-2xl border border-charcoal/10 bg-white p-3 shadow-soft">
               <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                 <p className="px-1 text-[10px] leading-relaxed text-charcoal/35">
-                  Answers are not persisted in this demo.
+                  Answers are not persisted.
                 </p>
                 <div className="flex flex-col gap-2 sm:flex-row">
                   <Button type="button" variant="outline" size="sm" onClick={saveForLater}>
@@ -637,7 +637,7 @@ export default function MissionDetailPage() {
                 </p>
                 <p className="mt-1.5 text-[10px] leading-relaxed text-charcoal/40">
                   {mission.sensitive
-                    ? 'Medical data is never written to localStorage in this build.'
+                    ? 'Medical data is never written to browser storage or Firestore.'
                     : 'Only status and XP persist; form answers are discarded.'}
                 </p>
               </div>
@@ -675,9 +675,9 @@ export default function MissionDetailPage() {
               Complete this mission?
             </h2>
             <p className="mt-2.5 text-[12px] leading-relaxed text-charcoal/55">
-              This mission contains sensitive information. In this frontend demo your answers will be
-              discarded immediately — only the completion status and {mission.xp} XP will be recorded.
-              Secure storage will be implemented with the backend.
+              This mission contains sensitive information. Your answers are discarded
+              immediately — only the completion status and {mission.xp} XP are recorded. They are
+              never written to Firestore, Supabase or browser storage.
             </p>
             <div className="mt-5 flex flex-col gap-2 sm:flex-row sm:justify-end">
               <Button variant="outline" size="sm" onClick={() => setConfirmOpen(false)}>

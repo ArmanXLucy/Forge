@@ -1,4 +1,5 @@
 export * from './activity'
+export * from './cloud'
 
 export type FitnessGoal =
   | 'fat-loss'

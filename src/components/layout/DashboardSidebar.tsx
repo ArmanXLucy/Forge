@@ -1,10 +1,11 @@
 import { Link, NavLink, useNavigate } from 'react-router-dom'
 import { ArrowUpRight, LifeBuoy, LogOut, Sparkles } from 'lucide-react'
 import { Logo } from '../../components/ui/Logo'
+import { Avatar } from '../../components/ui/Avatar'
 import { dashboardNav, dashboardSecondary } from '../../components/navigation/dashboardNav'
 import { useAuth } from '../../features/auth/AuthContext'
 import { useProfileStore, useProfileStats } from '../../store/useProfileStore'
-import { cn, initials } from '../../lib/utils'
+import { cn } from '../../lib/utils'
 import { GOAL_LABELS } from '../../lib/constants'
 
 interface DashboardSidebarProps {
@@ -14,6 +15,7 @@ interface DashboardSidebarProps {
 export function DashboardSidebar({ onNavigate }: DashboardSidebarProps) {
   const { user, signOut } = useAuth()
   const profile = useProfileStore((s) => s.profile)
+  const avatarUrl = useProfileStore((s) => s.avatarUrl)
   const { completion, xp } = useProfileStats()
   const navigate = useNavigate()
 
@@ -148,9 +150,11 @@ export function DashboardSidebar({ onNavigate }: DashboardSidebarProps) {
 
       <div className="border-t border-white/10 p-3">
         <div className="flex items-center gap-2.5 rounded-lg px-2 py-2">
-          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-orange-500/15 text-[11px] font-bold text-orange-400">
-            {initials(profile?.name ?? user?.displayName ?? 'Athlete')}
-          </span>
+          <Avatar
+            src={avatarUrl ?? user?.photoURL}
+            name={profile?.name ?? user?.displayName ?? 'Athlete'}
+            className="h-9 w-9 text-[11px]"
+          />
           <div className="min-w-0 flex-1">
             <p className="truncate text-[12px] font-semibold text-white">
               {profile?.name ?? user?.displayName ?? 'Athlete'}

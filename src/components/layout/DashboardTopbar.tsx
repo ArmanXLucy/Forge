@@ -11,14 +11,16 @@ import {
   UserRound,
 } from 'lucide-react'
 import { useAuth } from '../../features/auth/AuthContext'
+import { Avatar } from '../../components/ui/Avatar'
 import { useProfileStore, useProfileStats } from '../../store/useProfileStore'
 import { NOTIFICATIONS } from '../../data/dashboard'
-import { cn, firstName, formatDate, initials } from '../../lib/utils'
+import { cn, firstName, formatDate } from '../../lib/utils'
 import { greetingForHour } from '../../utils/missions'
 
 export function DashboardTopbar({ onOpenMenu }: { onOpenMenu: () => void }) {
   const { user, signOut } = useAuth()
   const profile = useProfileStore((s) => s.profile)
+  const avatarUrl = useProfileStore((s) => s.avatarUrl)
   const { completedMissions } = useProfileStats()
   const navigate = useNavigate()
   const [notificationsOpen, setNotificationsOpen] = useState(false)
@@ -161,9 +163,7 @@ export function DashboardTopbar({ onOpenMenu }: { onOpenMenu: () => void }) {
               aria-expanded={profileOpen}
               className="flex min-h-[44px] items-center gap-2 rounded-full border border-charcoal/12 bg-white py-1 pl-1 pr-1.5 transition-colors hover:border-charcoal/25 sm:pr-2.5"
             >
-              <span className="flex h-8 w-8 items-center justify-center rounded-full bg-charcoal text-[10px] font-bold text-white">
-                {initials(name)}
-              </span>
+              <Avatar src={avatarUrl ?? user?.photoURL} name={name} className="h-8 w-8 text-[10px]" />
               <span className="hidden max-w-[100px] truncate text-[11px] font-semibold text-charcoal sm:block">
                 {firstName(name)}
               </span>

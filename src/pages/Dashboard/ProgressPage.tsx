@@ -39,6 +39,7 @@ import { Button, buttonClasses } from '../../components/ui/Button'
 import { Modal } from '../../components/ui/Modal'
 import { ProgressRing } from '../../components/ui/ProgressRing'
 import { useActivityStore } from '../../store/useActivityStore'
+import { useDataStatus } from '../../hooks/useDataStatus'
 import { useProfileStats, useProfileStore } from '../../store/useProfileStore'
 import { useAuth } from '../../features/auth/AuthContext'
 import { GOAL_LABELS } from '../../lib/constants'
@@ -87,7 +88,7 @@ function MeasurementDialog({
       chestCm: form.chestCm ? Number(form.chestCm) : undefined,
       restingHr: form.restingHr ? Number(form.restingHr) : undefined,
     })
-    toast.success('Measurement saved on this device.')
+    toast.success('Measurement saved.')
     setForm({
       date: new Date().toISOString().slice(0, 10),
       weightKg: '',
@@ -104,7 +105,7 @@ function MeasurementDialog({
       open={open}
       onClose={onClose}
       title="Log a measurement"
-      description="Saved locally on this device. Use the same conditions each time for a cleaner trend."
+      description="Saved to your progress records. Use the same conditions each time for a cleaner trend."
       size="md"
       footer={
         <div className="flex justify-end gap-2">
@@ -165,8 +166,8 @@ function MeasurementDialog({
           ))}
         </div>
         <p className="rounded-xl bg-ivory p-3 text-[10px] leading-relaxed text-charcoal/40">
-          Measurements are non-sensitive demo records stored in this browser. Nothing is sent to a
-          server. Blood markers and medical reports are intentionally not collected here.
+          Measurements are stored in your private progress records. Blood markers and medical
+          reports are intentionally not collected here.
         </p>
       </div>
     </Modal>
@@ -197,6 +198,7 @@ function ChartTooltip({
 }
 
 export default function ProgressPage() {
+  const { source, isCloud } = useDataStatus()
   const measurements = useActivityStore((s) => s.measurements)
   const workouts = useActivityStore((s) => s.workouts)
   const aiSessions = useActivityStore((s) => s.aiSessions)
@@ -310,7 +312,7 @@ export default function ProgressPage() {
           }
           note={latest ? 'latest saved measurement' : 'no measurement yet'}
           accent
-          source={latest ? 'local' : 'empty'}
+          source={latest ? source : 'empty'}
         />
         <StatCard
           icon={LineChart}
@@ -327,7 +329,7 @@ export default function ProgressPage() {
               : undefined
           }
           note={latest?.bodyFat ? 'latest saved measurement' : 'optional measurement'}
-          source={latest?.bodyFat ? 'local' : 'empty'}
+          source={latest?.bodyFat ? source : 'empty'}
         />
         <StatCard
           icon={Ruler}
@@ -344,7 +346,7 @@ export default function ProgressPage() {
               : undefined
           }
           note={latest?.waistCm ? 'latest saved measurement' : 'optional measurement'}
-          source={latest?.waistCm ? 'local' : 'empty'}
+          source={latest?.waistCm ? source : 'empty'}
         />
         <StatCard
           icon={Activity}
@@ -352,7 +354,7 @@ export default function ProgressPage() {
           value={latest?.restingHr ?? '—'}
           suffix={latest?.restingHr ? 'bpm' : undefined}
           note={latest?.restingHr ? 'latest saved measurement' : 'optional measurement'}
-          source={latest?.restingHr ? 'local' : 'empty'}
+          source={latest?.restingHr ? source : 'empty'}
         />
       </div>
 
@@ -439,7 +441,7 @@ export default function ProgressPage() {
             <span className="inline-flex items-center gap-1.5 text-[10px] text-charcoal/35">
               <Check className="h-3 w-3 text-emerald-600" /> {filteredMeasurements.length} records in range
             </span>
-            <SourceBadge source={measurements.length ? 'local' : 'empty'} />
+            <SourceBadge source={measurements.length ? source : 'empty'} />
           </div>
         </SectionCard>
 
@@ -572,7 +574,7 @@ export default function ProgressPage() {
         <SectionCard
           eyebrow="AI form sessions"
           title={aiSessions.length ? `${aiSessions.length} scored sessions` : 'No AI sessions yet'}
-          action={<SourceBadge source={aiSessions.length ? 'local' : 'empty'} />}
+          action={<SourceBadge source={aiSessions.length ? source : 'empty'} />}
         >
           <div className="space-y-2.5">
             {aiByExercise.map((item) => (
@@ -631,7 +633,7 @@ export default function ProgressPage() {
               </p>
               <p className="mt-1 text-[10px] leading-relaxed text-charcoal/45">
                 {profile
-                  ? `You planned ${profile.workoutDays.length} training days per week. Progress is shown from records saved on this device.`
+                  ? `You planned ${profile.workoutDays.length} training days per week. Progress is shown from ${isCloud ? 'records synced to your account' : 'records saved on this device'}.`
                   : 'Complete Quick Start to set a goal and training rhythm.'}
               </p>
             </div>
@@ -669,12 +671,12 @@ export default function ProgressPage() {
             <p className="mt-2.5 text-[12px] font-semibold text-charcoal">Secure storage required.</p>
             <p className="mt-1 text-[10px] leading-relaxed text-charcoal/40">
               Progress photos are intentionally disabled in this frontend build. They must never be
-              stored in localStorage or shown as sample “your progress” imagery.
+              stored in browser storage or shown as sample “your progress” imagery.
             </p>
           </div>
           <p className="mt-3 text-[9px] leading-relaxed text-charcoal/30">
-            Body measurements are stored locally. Medical documents and photos require the Stage 2
-            secure backend.
+            Body measurements are stored in your {isCloud ? 'Firestore account' : 'local cache'}. Medical
+            documents and progress photos still require a dedicated secure workflow.
           </p>
         </section>
       </div>
@@ -684,7 +686,7 @@ export default function ProgressPage() {
           <Dumbbell className="h-3 w-3" /> Workout frequency comes from saved workout sessions.
         </span>
         <span className="inline-flex items-center gap-1.5">
-          <ChevronDown className="h-3 w-3" /> {user?.isDemo ? 'Demo workspace' : 'Private account'} · local records only.
+          <ChevronDown className="h-3 w-3" /> {user?.isDemo ? 'Demo workspace' : 'Private account'} · {isCloud ? 'cloud-synced records' : 'local records only'}.
         </span>
       </div>
 

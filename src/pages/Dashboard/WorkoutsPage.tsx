@@ -26,6 +26,7 @@ import { WorkoutPlayer, type WorkoutResult } from '../../components/dashboard/Wo
 import { WORKOUTS } from '../../data/dashboard'
 import { WEEKDAYS } from '../../lib/constants'
 import { useActivityStore } from '../../store/useActivityStore'
+import { useDataStatus } from '../../hooks/useDataStatus'
 import { useProfileStore } from '../../store/useProfileStore'
 import {
   addDays,
@@ -76,6 +77,7 @@ function dayName(weekday: number) {
 }
 
 export default function WorkoutsPage() {
+  const { source, label, isCloud } = useDataStatus()
   const [searchParams, setSearchParams] = useSearchParams()
   const workouts = useActivityStore((s) => s.workouts)
   const addWorkout = useActivityStore((s) => s.addWorkout)
@@ -131,7 +133,7 @@ export default function WorkoutsPage() {
       totalExercises: result.totalExercises,
       source: 'plan',
     })
-    toast.success('Workout saved on this device.')
+    toast.success('Workout saved.')
   }
 
   return (
@@ -162,9 +164,9 @@ export default function WorkoutsPage() {
           label="Sessions this week"
           value={weekWorkouts.length}
           suffix={`/ ${plannedWorkouts.length}`}
-          note="saved on this device"
+          note={isCloud ? 'synced to your account' : 'saved on this device'}
           accent
-          source={weekWorkouts.length ? 'local' : 'empty'}
+          source={weekWorkouts.length ? source : 'empty'}
         />
         <StatCard
           icon={Clock3}
@@ -172,7 +174,7 @@ export default function WorkoutsPage() {
           value={weekMinutes}
           suffix="min"
           note="this week"
-          source={weekWorkouts.length ? 'local' : 'empty'}
+          source={weekWorkouts.length ? source : 'empty'}
         />
         <StatCard
           icon={Layers}
@@ -188,7 +190,7 @@ export default function WorkoutsPage() {
           value={adherence}
           suffix="%"
           note={`${plannedWorkouts.length} planned sessions`}
-          source={weekWorkouts.length ? 'local' : 'empty'}
+          source={weekWorkouts.length ? source : 'empty'}
         />
       </div>
 
@@ -277,7 +279,7 @@ export default function WorkoutsPage() {
                 Session plan
               </p>
               <span className="text-[9px] uppercase tracking-[0.12em] text-white/25">
-                Demo template
+                Starter template
               </span>
             </div>
             <ul className="mt-3 divide-y divide-white/10">
@@ -308,10 +310,10 @@ export default function WorkoutsPage() {
               Week at a glance
             </p>
             <p className="mt-1 text-[11px] text-charcoal/40">
-              Planned sessions, with completed days marked from your local history.
+              Planned sessions, with completed days marked from your history.
             </p>
           </div>
-          <SourceBadge source="local" label="Local + sample plan" />
+          <SourceBadge source={source} label={isCloud ? 'Account + sample plan' : 'Local + sample plan'} />
         </div>
         <div className="mt-4 grid grid-cols-7 gap-1.5 sm:gap-2">
           {WEEKDAYS.map((day) => {
@@ -372,7 +374,7 @@ export default function WorkoutsPage() {
           })}
         </div>
         <p className="mt-3 text-[9px] leading-relaxed text-charcoal/30">
-          The weekly template is sample content. Completed markers are based on sessions you save locally.
+          The weekly template is sample content. Completed markers are based on sessions {isCloud ? 'synced to your account' : 'saved locally'}.
         </p>
       </section>
 
@@ -482,7 +484,7 @@ export default function WorkoutsPage() {
               <Check className="h-3.5 w-3.5 text-orange-500" /> Sample templates
             </p>
             <p className="mt-1.5 text-[10px] leading-relaxed text-charcoal/40">
-              These are sample plans, not generated programming. Your saved sessions are real local records.
+              These are sample plans, not generated programming. Your saved sessions are {isCloud ? 'stored in your account' : 'stored in this browser'}.
             </p>
           </div>
         </SectionCard>
@@ -492,7 +494,7 @@ export default function WorkoutsPage() {
         eyebrow="Workout history"
         title={workouts.length ? `${workouts.length} sessions saved.` : 'No sessions saved yet.'}
         className="mt-4"
-        action={<SourceBadge source={workouts.length ? 'local' : 'empty'} />}
+        action={<SourceBadge source={workouts.length ? source : 'empty'} />}
       >
         {workouts.length ? (
           <ul className="divide-y divide-charcoal/5">
@@ -536,7 +538,7 @@ export default function WorkoutsPage() {
 
       <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 text-[9px] uppercase tracking-[0.1em] text-charcoal/25">
         <span className="inline-flex items-center gap-1.5">
-          <Clock3 className="h-3 w-3" /> Sessions are timed in the player and saved on this device.
+          <Clock3 className="h-3 w-3" /> Sessions are timed in the player and {isCloud ? 'synced to your account' : 'saved on this device'}.
         </span>
         <span className="inline-flex items-center gap-1.5">
           <Flame className="h-3 w-3" /> Profile training days: {profile?.workoutDays.length ?? 0}

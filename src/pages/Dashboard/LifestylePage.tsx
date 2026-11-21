@@ -24,6 +24,7 @@ import {
 import { Button, buttonClasses } from '../../components/ui/Button'
 import { Modal } from '../../components/ui/Modal'
 import { useActivityStore } from '../../store/useActivityStore'
+import { useDataStatus } from '../../hooks/useDataStatus'
 import { average, dateKey, lifestyleForDate, sleepSeries } from '../../utils/activity'
 import { cn } from '../../lib/utils'
 
@@ -70,7 +71,7 @@ function LifestyleDialog({
       stress: Math.max(1, Math.min(10, Number(form.stress) || 1)),
       recoveryHabits: form.recoveryHabits,
     })
-    toast.success('Recovery check-in saved on this device.')
+    toast.success('Recovery check-in saved.')
     onClose()
   }
 
@@ -169,8 +170,8 @@ function LifestyleDialog({
           </div>
         </div>
         <p className="rounded-xl bg-ivory p-3 text-[10px] leading-relaxed text-charcoal/40">
-          Recovery entries are non-sensitive demo records stored on this device. They are not medical
-          advice and are not sent anywhere.
+          Recovery entries are non-sensitive records saved to your account. They are not medical
+          advice and are not sent to a clinician.
         </p>
       </div>
     </Modal>
@@ -203,6 +204,7 @@ function SleepTooltip({
 }
 
 export default function LifestylePage() {
+  const { source, label, isCloud } = useDataStatus()
   const lifestyle = useActivityStore((s) => s.lifestyle)
   const habitsByDate = useActivityStore((s) => s.habitsByDate)
   const toggleHabit = useActivityStore((s) => s.toggleHabit)
@@ -257,7 +259,7 @@ export default function LifestylePage() {
           suffix={avgSleep !== null ? 'h' : undefined}
           note={`${lastSeven.length} check-ins · last 7 days`}
           accent
-          source={lastSeven.length ? 'local' : 'empty'}
+          source={lastSeven.length ? source : 'empty'}
         />
         <StatCard
           icon={Footprints}
@@ -265,7 +267,7 @@ export default function LifestylePage() {
           value={avgSteps !== null ? Math.round(avgSteps).toLocaleString() : '—'}
           suffix={avgSteps !== null ? 'steps' : undefined}
           note={avgSteps !== null ? 'average from check-ins' : 'no step data yet'}
-          source={avgSteps !== null ? 'local' : 'empty'}
+          source={avgSteps !== null ? source : 'empty'}
         />
         <StatCard
           icon={Wind}
@@ -273,7 +275,7 @@ export default function LifestylePage() {
           value={avgStress !== null ? avgStress.toFixed(1) : '—'}
           suffix={avgStress !== null ? '/ 10' : undefined}
           note={avgStress !== null ? 'self-reported average' : 'no check-ins yet'}
-          source={avgStress !== null ? 'local' : 'empty'}
+          source={avgStress !== null ? source : 'empty'}
         />
         <StatCard
           icon={HeartPulse}
@@ -281,7 +283,7 @@ export default function LifestylePage() {
           value={todayHabits.length}
           suffix={`/ ${habits.length}`}
           note={`${habitPercent}% of today's checklist`}
-          source={todayHabits.length ? 'local' : 'empty'}
+          source={todayHabits.length ? source : 'empty'}
         />
       </div>
 
@@ -297,14 +299,14 @@ export default function LifestylePage() {
             </span>
           )}
         </div>
-        <SourceBadge source={lifestyle.length ? 'local' : 'empty'} label="Saved on this device" />
+        <SourceBadge source={lifestyle.length ? source : 'empty'} label={label} />
       </div>
 
       <div className="mt-4 grid gap-4 xl:grid-cols-[1.6fr_1fr]">
         <SectionCard
           eyebrow="Sleep last week"
           title={`${avgSleep !== null ? `${avgSleep.toFixed(1)} h average` : 'No sleep logged yet'}`}
-          action={<SourceBadge source={loggedNights ? 'local' : 'empty'} label={`${loggedNights}/7 nights`} />}
+          action={<SourceBadge source={loggedNights ? source : 'empty'} label={`${loggedNights}/7 nights`} />}
         >
           <div className="h-[250px] w-full min-w-0">
             <ResponsiveContainer width="100%" height="100%">
@@ -406,7 +408,7 @@ export default function LifestylePage() {
               </li>
             ))}
           </ul>
-          <p className="mt-3 text-[9px] text-charcoal/25">Habits are saved for today on this device.</p>
+          <p className="mt-3 text-[9px] text-charcoal/25">Habits are saved for today {isCloud ? 'to your account' : 'on this device'}.</p>
         </SectionCard>
       </div>
 
@@ -454,7 +456,7 @@ export default function LifestylePage() {
           <HeartPulse className="h-3 w-3" /> Self-reported data only. Not a diagnosis or medical assessment.
         </span>
         <span className="inline-flex items-center gap-1.5">
-          <ArrowRight className="h-3 w-3" /> Recovery check-ins save locally.
+          <ArrowRight className="h-3 w-3" /> Recovery check-ins save {isCloud ? 'to your account' : 'locally'}.
         </span>
       </div>
 
