@@ -1,10 +1,11 @@
 import { NavLink } from 'react-router-dom'
-import { Dumbbell, LayoutDashboard, LineChart, Sparkles, Target } from 'lucide-react'
+import { Brain, Dumbbell, LayoutDashboard, LineChart, Sparkles, Target } from 'lucide-react'
 import { cn } from '../../lib/utils'
 
 const items = [
   { label: 'Overview', to: '/dashboard', icon: LayoutDashboard, end: true },
   { label: 'Missions', to: '/dashboard/missions', icon: Target },
+  { label: 'AI Plan', to: '/dashboard/workout-recommendation', icon: Brain },
   { label: 'AI Coach', to: '/dashboard/ai-coach', icon: Sparkles },
   { label: 'Workouts', to: '/dashboard/workouts', icon: Dumbbell },
   { label: 'Progress', to: '/dashboard/progress', icon: LineChart },
@@ -16,7 +17,7 @@ export function MobileBottomNav() {
       className="fixed inset-x-0 bottom-0 z-30 border-t border-charcoal/10 bg-white/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-md lg:hidden"
       aria-label="Dashboard quick navigation"
     >
-      <ul className="grid grid-cols-5">
+      <ul className="grid grid-cols-6">
         {items.map((item) => (
           <li key={item.to}>
             <NavLink

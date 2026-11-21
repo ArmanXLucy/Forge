@@ -24,3 +24,5 @@ __pycache__/
 
 # Local OS artifacts
 Thumbs.db
+public/models/workout_recommendation.onnx
+public/models/feature_schema.json
