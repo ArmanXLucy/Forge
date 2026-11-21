@@ -35,6 +35,7 @@ export interface CloudUserRecord {
   avatarUrl: string | null
   avatarPath: string | null
   avatarCleared: boolean
+  accountStatus: 'active' | 'suspended'
   profile: QuickStartProfile | null
 }
 
@@ -115,6 +116,7 @@ export async function getUserRecord(uid: string): Promise<CloudUserRecord | null
     avatarUrl: stringOrNull(data.avatarUrl),
     avatarPath: stringOrNull(data.avatarPath),
     avatarCleared: data.avatarCleared === true,
+    accountStatus: data.accountStatus === 'suspended' ? 'suspended' : 'active',
     profile: normaliseProfile(data),
   }
 }

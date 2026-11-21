@@ -13,8 +13,10 @@ import {
 import { useAuth } from '../../features/auth/AuthContext'
 import { Avatar } from '../../components/ui/Avatar'
 import { useProfileStore, useProfileStats } from '../../store/useProfileStore'
-import { NOTIFICATIONS } from '../../data/dashboard'
+import { listNotifications, markAllNotificationsRead, markNotificationRead } from '../../services/cloud/adminRepository'
+import type { AppNotification } from '../../types/support'
 import { cn, firstName, formatDate } from '../../lib/utils'
+import { relativeTime } from '../../utils/activity'
 import { greetingForHour } from '../../utils/missions'
 
 export function DashboardTopbar({ onOpenMenu }: { onOpenMenu: () => void }) {
@@ -25,9 +27,19 @@ export function DashboardTopbar({ onOpenMenu }: { onOpenMenu: () => void }) {
   const navigate = useNavigate()
   const [notificationsOpen, setNotificationsOpen] = useState(false)
   const [profileOpen, setProfileOpen] = useState(false)
-  const [notifications, setNotifications] = useState(NOTIFICATIONS)
+  const [notifications, setNotifications] = useState<AppNotification[]>([])
   const notificationRef = useRef<HTMLDivElement>(null)
   const profileRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!user?.uid) {
+      setNotifications([])
+      return
+    }
+    listNotifications(user.uid)
+      .then(setNotifications)
+      .catch(() => setNotifications([]))
+  }, [user?.uid])
 
   useEffect(() => {
     const onPointerDown = (event: PointerEvent) => {
@@ -54,7 +66,7 @@ export function DashboardTopbar({ onOpenMenu }: { onOpenMenu: () => void }) {
     return () => document.removeEventListener('keydown', onKey)
   }, [])
 
-  const unreadCount = notifications.filter((n) => n.unread).length
+  const unreadCount = notifications.filter((notification) => !notification.read).length
   const name = profile?.name ?? user?.displayName ?? 'Athlete'
 
   const handleSignOut = async () => {
@@ -118,35 +130,64 @@ export function DashboardTopbar({ onOpenMenu }: { onOpenMenu: () => void }) {
                   </p>
                   <button
                     type="button"
-                    onClick={() => setNotifications((items) => items.map((item) => ({ ...item, unread: false })))}
+                    onClick={() => {
+                      if (!user) return
+                      void markAllNotificationsRead(user.uid).then(() =>
+                        setNotifications((items) => items.map((item) => ({ ...item, read: true }))),
+                      )
+                    }}
                     className="inline-flex items-center gap-1 text-[10px] font-semibold text-charcoal/40 hover:text-orange-600"
                   >
                     <CheckCheck className="h-3 w-3" /> Mark read
                   </button>
                 </div>
                 <ul className="max-h-[320px] divide-y divide-charcoal/5 overflow-y-auto">
+                  {notifications.length === 0 && (
+                    <li className="px-4 py-8 text-center text-[10px] leading-relaxed text-charcoal/35">
+                      No notifications yet. Support replies and platform updates will appear here.
+                    </li>
+                  )}
                   {notifications.map((notification) => (
-                    <li key={notification.id} className="flex gap-3 px-4 py-3.5">
-                      <span
-                        className={cn(
-                          'mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full',
-                          notification.unread ? 'bg-orange-500' : 'bg-charcoal/15',
-                        )}
-                      />
-                      <div>
-                        <p className="text-[12px] font-semibold text-charcoal">{notification.title}</p>
-                        <p className="mt-0.5 text-[11px] leading-relaxed text-charcoal/50">
-                          {notification.body}
-                        </p>
-                        <p className="mt-1 text-[9px] uppercase tracking-[0.12em] text-charcoal/30">
-                          {notification.time}
-                        </p>
-                      </div>
+                    <li key={notification.id}>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (!notification.read) {
+                            void markNotificationRead(notification.id)
+                            setNotifications((items) =>
+                              items.map((item) =>
+                                item.id === notification.id ? { ...item, read: true } : item,
+                              ),
+                            )
+                          }
+                          if (notification.relatedTicketId) {
+                            setNotificationsOpen(false)
+                            navigate(`/dashboard/help-desk/${notification.relatedTicketId}`)
+                          }
+                        }}
+                        className="flex w-full gap-3 px-4 py-3.5 text-left hover:bg-ivory/60"
+                      >
+                        <span
+                          className={cn(
+                            'mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full',
+                            notification.read ? 'bg-charcoal/15' : 'bg-orange-500',
+                          )}
+                        />
+                        <div className="min-w-0">
+                          <p className="truncate text-[12px] font-semibold text-charcoal">{notification.title}</p>
+                          <p className="mt-0.5 text-[11px] leading-relaxed text-charcoal/50">
+                            {notification.message}
+                          </p>
+                          <p className="mt-1 text-[9px] uppercase tracking-[0.12em] text-charcoal/30">
+                            {relativeTime(notification.createdAt)}
+                          </p>
+                        </div>
+                      </button>
                     </li>
                   ))}
                 </ul>
                 <div className="border-t border-charcoal/10 bg-ivory/60 px-4 py-2.5 text-[9px] uppercase tracking-[0.12em] text-charcoal/35">
-                  Sample notifications · demo data
+                  Support & platform notifications
                 </div>
               </div>
             )}

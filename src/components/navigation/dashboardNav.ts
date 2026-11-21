@@ -5,6 +5,7 @@ import {
   Dumbbell,
   HeartPulse,
   LayoutDashboard,
+  LifeBuoy,
   LineChart,
   MoonStar,
   Ruler,
@@ -33,6 +34,10 @@ export const dashboardNav = [
   { label: 'AI Coach', to: '/dashboard/ai-coach', icon: Sparkles, badge: 'Live' },
 ]
 
+export const dashboardSupport = [
+  { label: 'Help Desk', to: '/dashboard/help-desk', icon: LifeBuoy },
+]
+
 export const dashboardSecondary = [{ label: 'Settings', to: '/dashboard/settings', icon: Settings }]
 
-export { LayoutDashboard, Target, Dumbbell, Apple, LineChart, MoonStar, Sparkles, Settings }
+export { LayoutDashboard, Target, Dumbbell, Apple, LineChart, MoonStar, Sparkles, Settings, LifeBuoy }

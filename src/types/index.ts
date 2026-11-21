@@ -1,3 +1,5 @@
+export * from './admin'
+export * from './support'
 export * from './activity'
 export * from './cloud'
 

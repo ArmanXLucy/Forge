@@ -30,6 +30,7 @@ interface ProfileState {
   progress: Record<string, MissionProgress>
   avatarUrl: string | null
   avatarPath: string | null
+  accountStatus: 'active' | 'suspended'
   hydrated: boolean
   cloudEnabled: boolean
   syncStatus: SyncStatus
@@ -89,6 +90,7 @@ export const useProfileStore = create<ProfileState>((set, get) => ({
   progress: {},
   avatarUrl: null,
   avatarPath: null,
+  accountStatus: 'active',
   hydrated: false,
   cloudEnabled: false,
   syncStatus: 'local',
@@ -107,6 +109,7 @@ export const useProfileStore = create<ProfileState>((set, get) => ({
       progress,
       avatarUrl: options.photoURL ?? null,
       avatarPath: null,
+      accountStatus: 'active',
       hydrated: !cloudEnabled || Boolean(localProfile),
       cloudEnabled,
       syncStatus: cloudEnabled ? 'loading' : 'local',
@@ -155,6 +158,7 @@ export const useProfileStore = create<ProfileState>((set, get) => ({
           options.photoURL ??
           null,
         avatarPath: account?.avatarPath ?? null,
+        accountStatus: account?.accountStatus ?? 'active',
         hydrated: true,
         syncStatus: 'synced',
         syncError: null,
@@ -176,6 +180,7 @@ export const useProfileStore = create<ProfileState>((set, get) => ({
       progress: {},
       avatarUrl: null,
       avatarPath: null,
+      accountStatus: 'active',
       hydrated: false,
       cloudEnabled: false,
       syncStatus: 'local',

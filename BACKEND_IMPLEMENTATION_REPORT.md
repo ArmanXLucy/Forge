@@ -367,7 +367,7 @@ VITE_SUPABASE_UPLOAD_FUNCTION_URL=
 VITE_USE_FIREBASE_EMULATORS=
 ```
 
-Never add `SUPABASE_SERVICE_ROLE_KEY` to `.env` or any `VITE_` variable.
+Never add `SUPABASE_SERVICE_ROLE_KEY` (or `STORAGE_SERVICE_ROLE_KEY`) to `.env` or any `VITE_` variable.
 
 ---
 
@@ -434,6 +434,6 @@ Summary:
 6. Run `supabase/storage-policies.sql`.
 7. Deploy `supabase/functions/profile-image`.
 8. Confirm `.env` contains the corrected URL, publishable key and function URL.
-9. Set `FIREBASE_PROJECT_ID`, `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` as Edge Function secrets.
+9. Set `FIREBASE_PROJECT_ID`, `STORAGE_URL` and `STORAGE_SERVICE_ROLE_KEY` as Edge Function secrets. Secret names may not start with `SUPABASE_`, which is why the custom `STORAGE_` names are used; the platform-injected values remain as a fallback.
 10. Restart the Vite dev server.
 11. Re-run the live Supabase upload and cross-user tests.

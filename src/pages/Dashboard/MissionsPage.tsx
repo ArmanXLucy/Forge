@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
   ArrowRight,
@@ -17,7 +18,8 @@ import { MISSION_ICONS } from '../../components/navigation/dashboardNav'
 import { useProfileStore, useProfileStats } from '../../store/useProfileStore'
 import { useDataStatus } from '../../hooks/useDataStatus'
 import { MISSIONS, ADVANCED_ASSESSMENTS, ACHIEVEMENTS } from '../../data/missions'
-import { effectiveStatus, nextMission, unlockedAchievements } from '../../utils/missions'
+import { effectiveStatus, unlockedAchievements } from '../../utils/missions'
+import { getMissionSettings } from '../../services/cloud/adminRepository'
 import { cn } from '../../lib/utils'
 import type { Achievement } from '../../types'
 import {
@@ -47,10 +49,29 @@ export default function MissionsPage() {
   const progress = useProfileStore((s) => s.progress)
   const profile = useProfileStore((s) => s.profile)
   const { completion, xp, completedMissions } = useProfileStats()
-  const next = nextMission(progress)
+  const [missionSettings, setMissionSettings] = useState<Record<string, boolean>>({})
+  const [settingsLoaded, setSettingsLoaded] = useState(false)
+  const visibleMissions = MISSIONS.filter((mission) => missionSettings[mission.id] !== false)
+  const next = visibleMissions.find((mission) => progress[mission.id]?.status !== 'completed') ?? null
+  const visibleCompleted = visibleMissions.filter((mission) => progress[mission.id]?.status === 'completed').length
   const achievements = unlockedAchievements(profile, progress)
   const unlockedIds = new Set(achievements.map((achievement) => achievement.id))
-  const allComplete = completedMissions === MISSIONS.length
+  const allComplete = settingsLoaded && visibleMissions.length > 0 && visibleCompleted === visibleMissions.length
+
+  useEffect(() => {
+    let cancelled = false
+    getMissionSettings()
+      .then((settings) => {
+        if (!cancelled) setMissionSettings(settings)
+      })
+      .catch(() => undefined)
+      .finally(() => {
+        if (!cancelled) setSettingsLoaded(true)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   return (
     <div>
@@ -64,7 +85,7 @@ export default function MissionsPage() {
               <Sparkles className="h-3.5 w-3.5" /> {xp} XP
             </span>
             <span className="rounded-full border border-charcoal/12 bg-white px-3 py-2 text-[10px] font-bold uppercase tracking-[0.12em] text-charcoal/50">
-              {completedMissions}/7 done
+              {visibleCompleted}/{visibleMissions.length} done
             </span>
           </div>
         }
@@ -84,7 +105,7 @@ export default function MissionsPage() {
                 Profile strength
               </p>
               <p className="mt-1 font-display uppercase text-xl leading-tight text-charcoal">
-                {allComplete ? 'Complete athlete' : `${MISSIONS.length - completedMissions} missions to go`}
+                {allComplete ? 'Complete athlete' : `${visibleMissions.length - visibleCompleted} missions to go`}
               </p>
               <p className="mt-1 max-w-xs text-[11px] leading-relaxed text-charcoal/45">
                 {allComplete
@@ -131,12 +152,12 @@ export default function MissionsPage() {
       <section className="mt-6" aria-labelledby="mission-grid-heading">
         <div className="mb-3 flex items-end justify-between">
           <h2 id="mission-grid-heading" className="text-[13px] font-bold uppercase tracking-[0.14em] text-charcoal">
-            Seven profile dimensions
+            Profile dimensions
           </h2>
           <DemoDataBadge label={isCloud ? 'Status synced' : label} />
         </div>
         <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-          {MISSIONS.map((mission) => {
+          {visibleMissions.map((mission) => {
             const status = effectiveStatus(mission.id, progress)
             const Icon = MISSION_ICONS[mission.id] ?? Target
             const isCompleted = status === 'completed'

@@ -9,6 +9,7 @@ interface AuthLayoutProps {
   subtitle: string
   children: ReactNode
   footer?: ReactNode
+  topSlot?: ReactNode
   image?: string
   imageAlt?: string
 }
@@ -18,13 +19,14 @@ export function AuthLayout({
   subtitle,
   children,
   footer,
+  topSlot,
   image = '/images/hero-athlete.jpg',
   imageAlt = 'Athlete training at Forge Athletic',
 }: AuthLayoutProps) {
   return (
-    <div className="min-h-screen bg-ivory">
-      <div className="grid min-h-screen lg:grid-cols-[1fr_1.05fr]">
-        <aside className="relative hidden overflow-hidden bg-charcoal lg:block">
+    <div className="min-h-screen bg-ivory lg:h-screen lg:overflow-hidden">
+      <div className="grid min-h-screen lg:h-screen lg:grid-cols-[1fr_1.05fr]">
+        <aside className="relative hidden overflow-hidden bg-charcoal lg:block lg:h-screen">
           <img
             src={image}
             alt={imageAlt}
@@ -66,7 +68,7 @@ export function AuthLayout({
           </div>
         </aside>
 
-        <main className="flex min-h-screen flex-col bg-ivory">
+        <main className="flex min-h-screen flex-col bg-ivory lg:h-screen lg:min-h-0 lg:overflow-y-auto lg:[scrollbar-gutter:stable]">
           <div className="flex items-center justify-between px-5 py-5 sm:px-8 lg:px-10">
             <Link to="/" className="lg:hidden" aria-label="Forge Athletic home">
               <Logo />
@@ -81,6 +83,7 @@ export function AuthLayout({
 
           <div className="flex flex-1 items-center justify-center px-5 pb-12 pt-2 sm:px-8 lg:px-10">
             <div className="w-full max-w-[430px]">
+              {topSlot && <div className="mb-8">{topSlot}</div>}
               <p className="eyebrow">
                 <span className="h-px w-6 bg-current" /> Forge Athletic
               </p>

@@ -1,8 +1,8 @@
 import { Link, NavLink, useNavigate } from 'react-router-dom'
-import { ArrowUpRight, LifeBuoy, LogOut, Sparkles } from 'lucide-react'
+import { LogOut, Sparkles } from 'lucide-react'
 import { Logo } from '../../components/ui/Logo'
 import { Avatar } from '../../components/ui/Avatar'
-import { dashboardNav, dashboardSecondary } from '../../components/navigation/dashboardNav'
+import { dashboardNav, dashboardSecondary, dashboardSupport } from '../../components/navigation/dashboardNav'
 import { useAuth } from '../../features/auth/AuthContext'
 import { useProfileStore, useProfileStats } from '../../store/useProfileStore'
 import { cn } from '../../lib/utils'
@@ -105,6 +105,46 @@ export function DashboardSidebar({ onNavigate }: DashboardSidebarProps) {
         </ul>
 
         <p className="px-3 pb-2 pt-5 text-[9px] font-bold uppercase tracking-[0.2em] text-white/25">
+          Help & support
+        </p>
+        <ul className="space-y-0.5">
+          {dashboardSupport.map((item) => (
+            <li key={item.to}>
+              <NavLink
+                to={item.to}
+                onClick={onNavigate}
+                className={({ isActive }) =>
+                  cn(
+                    'group relative flex min-h-[42px] items-center gap-3 rounded-lg px-3 text-[12px] font-medium transition-colors',
+                    isActive
+                      ? 'bg-white/[0.07] text-white'
+                      : 'text-white/50 hover:bg-white/[0.04] hover:text-white/85',
+                  )
+                }
+              >
+                {({ isActive }) => (
+                  <>
+                    <span
+                      className={cn(
+                        'absolute left-0 top-1/2 h-5 w-[2px] -translate-y-1/2 rounded-full bg-orange-500 transition-opacity',
+                        isActive ? 'opacity-100' : 'opacity-0',
+                      )}
+                    />
+                    <item.icon
+                      className={cn(
+                        'h-4 w-4 shrink-0',
+                        isActive ? 'text-orange-500' : 'text-white/35 group-hover:text-white/70',
+                      )}
+                    />
+                    {item.label}
+                  </>
+                )}
+              </NavLink>
+            </li>
+          ))}
+        </ul>
+
+        <p className="px-3 pb-2 pt-5 text-[9px] font-bold uppercase tracking-[0.2em] text-white/25">
           Account
         </p>
         <ul className="space-y-0.5">
@@ -138,14 +178,6 @@ export function DashboardSidebar({ onNavigate }: DashboardSidebarProps) {
           ))}
         </ul>
 
-        <a
-          href="mailto:hello@forge-athletic.ch"
-          className="sidebar-optional mx-2 mt-3 flex min-h-[42px] items-center gap-3 rounded-lg border border-white/8 px-3 text-[11px] font-medium text-white/40 transition-colors hover:border-orange-500/25 hover:bg-orange-500/[0.05] hover:text-white/75"
-        >
-          <LifeBuoy className="h-4 w-4 shrink-0 text-orange-400/80" />
-          <span className="flex-1">Coach support</span>
-          <ArrowUpRight className="h-3.5 w-3.5 shrink-0 text-white/25" />
-        </a>
       </nav>
 
       <div className="border-t border-white/10 p-3">

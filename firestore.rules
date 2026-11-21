@@ -10,24 +10,196 @@ service cloud.firestore {
       return signedIn() && request.auth.uid == uid;
     }
 
-    function ownsUserId(uid) {
-      return !('userId' in request.resource.data) ||
-        request.resource.data.userId == uid;
+    function adminRef() {
+      return /databases/$(database)/documents/adminUsers/$(request.auth.uid);
     }
 
-    // Every user-owned document lives under users/{uid}. A user may only read
-    // or write documents in their own subtree. All other paths are denied.
+    function adminExists() {
+      return signedIn() && exists(adminRef());
+    }
+
+    function adminData() {
+      return get(adminRef()).data;
+    }
+
+    function isAdmin() {
+      return adminExists() && adminData().active == true;
+    }
+
+    function hasRole(roles) {
+      return isAdmin() && adminData().role in roles;
+    }
+
+    function canManageUsers() {
+      return hasRole(['super_admin', 'admin']);
+    }
+
+    function canManageRoles() {
+      return hasRole(['super_admin']);
+    }
+
+    function canManageContent() {
+      return hasRole(['super_admin', 'admin', 'fitness_manager']);
+    }
+
+    function canSupport() {
+      return hasRole(['super_admin', 'admin', 'support_manager']);
+    }
+
+    function canViewAnalytics() {
+      return hasRole(['super_admin', 'admin', 'fitness_manager', 'support_manager', 'analyst']);
+    }
+
+    function canManagePlatform() {
+      return hasRole(['super_admin']);
+    }
+
+    function ownsUserId(uid) {
+      return !('userId' in request.resource.data) || request.resource.data.userId == uid;
+    }
+
+    function validTicketCreate(ticketId) {
+      return signedIn() &&
+        request.resource.data.userId == request.auth.uid &&
+        request.resource.data.ticketId is string &&
+        request.resource.data.ticketId.size() <= 40 &&
+        request.resource.data.status == 'open' &&
+        request.resource.data.priority == 'medium' &&
+        request.resource.data.category in ['account', 'workouts', 'ai-coach', 'nutrition', 'progress', 'technical', 'other'] &&
+        request.resource.data.subject is string &&
+        request.resource.data.subject.size() >= 4 &&
+        request.resource.data.subject.size() <= 140 &&
+        request.resource.data.description is string &&
+        request.resource.data.description.size() >= 10 &&
+        request.resource.data.description.size() <= 5000;
+    }
+
+    // ---------------------------------------------------------------- users
     match /users/{uid} {
-      allow get, list: if isOwner(uid);
+      allow get, list: if isOwner(uid) || isAdmin();
       allow create: if isOwner(uid) && request.resource.data.uid == uid;
-      allow update: if isOwner(uid) &&
-        (!('uid' in request.resource.data) || request.resource.data.uid == uid);
-      allow delete: if isOwner(uid);
+      allow update: if (isOwner(uid) &&
+          (!('uid' in request.resource.data) || request.resource.data.uid == uid) &&
+          !request.resource.data.diff(resource.data).affectedKeys().hasAny(['accountStatus', 'adminNote'])) ||
+        canManageUsers();
+      allow delete: if isOwner(uid) || canManageRoles();
 
       match /{collection}/{docId} {
-        allow read, delete: if isOwner(uid);
+        allow read: if isOwner(uid) || isAdmin();
         allow create, update: if isOwner(uid) && ownsUserId(uid);
+        allow delete: if isOwner(uid) || canManageRoles();
       }
+    }
+
+    // Admin collection-group reads (overview / monitoring / analytics).
+    match /{path=**}/workouts/{docId} {
+      allow read: if isAdmin();
+    }
+    match /{path=**}/missions/{docId} {
+      allow read: if isAdmin();
+    }
+    match /{path=**}/ai_sessions/{docId} {
+      allow read: if isAdmin();
+    }
+    match /{path=**}/nutrition_logs/{docId} {
+      allow read: if isAdmin();
+    }
+    match /{path=**}/progress_records/{docId} {
+      allow read: if isAdmin();
+    }
+    match /{path=**}/lifestyle_logs/{docId} {
+      allow read: if isAdmin();
+    }
+
+    // ----------------------------------------------------------- admin roles
+    match /adminUsers/{uid} {
+      allow get: if isOwner(uid) || isAdmin();
+      allow list: if isAdmin();
+      allow create: if canManageRoles() && request.resource.data.uid == uid;
+      allow update: if canManageRoles() ||
+        (isOwner(uid) && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name', 'lastLoginAt', 'updatedAt']));
+      allow delete: if canManageRoles() && uid != request.auth.uid;
+    }
+
+    // ---------------------------------------------------------- help desk
+    match /supportTickets/{ticketId} {
+      allow get: if isOwner(resource.data.userId) || canSupport();
+      allow list: if canSupport() ||
+        (signedIn() && resource.data.userId == request.auth.uid);
+      allow create: if validTicketCreate(ticketId);
+      allow update: if canSupport() ||
+        (isOwner(resource.data.userId) &&
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+            'status', 'lastMessageAt', 'updatedAt', 'messageCount'
+          ]) &&
+          (request.resource.data.status == resource.data.status ||
+            ((resource.data.status == 'resolved' || resource.data.status == 'waiting_for_user') &&
+              request.resource.data.status == 'open')));
+      allow delete: if canManageRoles();
+
+      match /messages/{messageId} {
+        allow read: if canSupport() ||
+          (signedIn() && get(/databases/$(database)/documents/supportTickets/$(ticketId)).data.userId == request.auth.uid);
+        allow create: if
+          (signedIn() &&
+            request.resource.data.senderRole == 'user' &&
+            request.resource.data.senderId == request.auth.uid &&
+            get(/databases/$(database)/documents/supportTickets/$(ticketId)).data.userId == request.auth.uid &&
+            get(/databases/$(database)/documents/supportTickets/$(ticketId)).data.status != 'closed') ||
+          (canSupport() &&
+            request.resource.data.senderRole == 'admin' &&
+            request.resource.data.senderId == request.auth.uid);
+        allow update, delete: if false;
+      }
+
+      match /internal_notes/{noteId} {
+        allow read: if canSupport();
+        allow create: if canSupport() &&
+          request.resource.data.adminId == request.auth.uid;
+        allow update, delete: if canManageRoles();
+      }
+    }
+
+    // -------------------------------------------------------- notifications
+    match /notifications/{notificationId} {
+      allow get: if isOwner(resource.data.userId) || isAdmin();
+      allow list: if isAdmin() ||
+        (signedIn() && resource.data.userId == request.auth.uid);
+      allow create: if isAdmin();
+      allow update: if
+        (isOwner(resource.data.userId) &&
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read'])) ||
+        isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // ------------------------------------------------------- admin logs
+    match /adminActivityLogs/{logId} {
+      allow read: if isAdmin();
+      allow create: if isAdmin() && request.resource.data.adminId == request.auth.uid;
+      allow update, delete: if false;
+    }
+
+    // ------------------------------------------------------ content catalog
+    match /workoutPlans/{docId} {
+      allow read: if isAdmin();
+      allow write: if canManageContent();
+    }
+    match /exerciseLibrary/{docId} {
+      allow read: if isAdmin();
+      allow write: if canManageContent();
+    }
+    match /nutritionPlans/{docId} {
+      allow read: if isAdmin();
+      allow write: if canManageContent();
+    }
+    match /missionSettings/{missionId} {
+      allow read: if signedIn();
+      allow write: if canManageContent();
+    }
+    match /platformSettings/{docId} {
+      allow read: if isAdmin();
+      allow write: if canManagePlatform();
     }
 
     match /{document=**} {

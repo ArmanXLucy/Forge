@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, Outlet, useLocation, Navigate } from 'react-router-dom'
 import { AnimatePresence, motion } from 'framer-motion'
-import { CloudOff, X } from 'lucide-react'
+import { CloudOff, LogOut, ShieldAlert, X } from 'lucide-react'
 import { DashboardSidebar } from '../components/layout/DashboardSidebar'
 import { DashboardTopbar } from '../components/layout/DashboardTopbar'
 import { MobileBottomNav } from '../components/layout/MobileBottomNav'
@@ -14,7 +14,8 @@ export function DashboardLayout() {
   const [drawerOpen, setDrawerOpen] = useState(false)
   const profile = useProfileStore((s) => s.profile)
   const hydrated = useProfileStore((s) => s.hydrated)
-  const { user } = useAuth()
+  const accountStatus = useProfileStore((s) => s.accountStatus)
+  const { user, signOut } = useAuth()
   const { isCloud, error } = useDataStatus()
   const location = useLocation()
 
@@ -31,6 +32,27 @@ export function DashboardLayout() {
   }, [drawerOpen])
 
   if (!hydrated) return <FullScreenLoader />
+  if (accountStatus === 'suspended') {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-charcoal px-5">
+        <div className="w-full max-w-md rounded-2xl border border-white/10 bg-white/[0.04] p-6 text-white">
+          <ShieldAlert className="h-8 w-8 text-orange-400" />
+          <h1 className="mt-4 font-display text-3xl uppercase leading-none">Account suspended</h1>
+          <p className="mt-3 text-sm leading-relaxed text-white/50">
+            This account has been suspended by an administrator. Open a support request after access
+            is restored if you need help.
+          </p>
+          <button
+            type="button"
+            onClick={() => void signOut()}
+            className="mt-5 inline-flex min-h-[42px] items-center gap-2 rounded-full bg-orange-500 px-5 text-[11px] font-bold uppercase tracking-[0.12em] text-white"
+          >
+            <LogOut className="h-3.5 w-3.5" /> Sign out
+          </button>
+        </div>
+      </div>
+    )
+  }
   if (user && !profile) return <Navigate to="/onboarding" replace />
 
   return (

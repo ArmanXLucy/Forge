@@ -58,7 +58,7 @@ export function ProfilePhotoCard({ storageReady = true }: { storageReady?: boole
       return
     }
     if (!storageReady) {
-      setError('Photo storage is not ready yet. Create the profile-images bucket in Supabase and reload Settings.')
+      setError('Photo storage is not ready yet. Confirm the profile-images bucket and deploy the profile-image Edge Function, then reload Settings.')
       return
     }
     const validation = validateProfileImage(selected)

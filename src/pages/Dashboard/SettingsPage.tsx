@@ -12,6 +12,7 @@ import {
   KeyRound,
   Loader2,
   LockKeyhole,
+  LifeBuoy,
   LogOut,
   Mail,
   Pencil,
@@ -512,11 +513,13 @@ export default function SettingsPage() {
                         ? 'Checking'
                         : storageHealth === 'missing-bucket'
                           ? 'Bucket missing'
-                          : storageHealth === 'error'
-                            ? 'Unreachable'
-                          : isProfileImageStorageConfigured
-                            ? 'Configured'
-                            : 'Not configured'
+                          : storageHealth === 'function-missing'
+                            ? 'Upload function missing'
+                            : storageHealth === 'error'
+                              ? 'Unreachable'
+                              : isProfileImageStorageConfigured
+                                ? 'Configured'
+                                : 'Not configured'
                   }
                 />
               </div>
@@ -608,20 +611,20 @@ export default function SettingsPage() {
 
           <section className="rounded-2xl bg-charcoal p-5 text-white">
             <p className="text-[9px] font-bold uppercase tracking-[0.16em] text-orange-400">
-              Need to update your programme?
+              Help & support
             </p>
             <p className="mt-2 font-display uppercase text-xl leading-tight">
-              Your coach is one message away.
+              Need a hand with your programme?
             </p>
             <p className="mt-2 text-[11px] leading-relaxed text-white/45">
-              Use the email link below to open your mail client.
+              Open a private ticket in the Help Desk and the support team can pick it up from there.
             </p>
-            <a
-              href="mailto:hello@forge-athletic.ch"
+            <Link
+              to="/dashboard/help-desk"
               className="mt-4 inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.12em] text-orange-400 hover:text-orange-300"
             >
-              hello@forge-athletic.ch <ArrowRight className="h-3 w-3" />
-            </a>
+              <LifeBuoy className="h-3.5 w-3.5" /> Open Help Desk <ArrowRight className="h-3 w-3" />
+            </Link>
           </section>
         </div>
       </div>

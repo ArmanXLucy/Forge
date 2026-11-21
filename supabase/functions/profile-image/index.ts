@@ -5,16 +5,20 @@
 // the browser and works even when Supabase is not configured for Firebase
 // third-party auth.
 //
-// Required function secrets:
-//   SUPABASE_URL
-//   SUPABASE_SERVICE_ROLE_KEY
+// Required function secrets (custom names, because Supabase rejects secrets
+// whose name starts with SUPABASE_):
+//   STORAGE_URL
+//   STORAGE_SERVICE_ROLE_KEY
 //   FIREBASE_PROJECT_ID
+//
+// The platform-injected SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY are used as a
+// fallback, so the function also works without the two custom secrets.
 //
 // Deploy with:
 //   supabase functions deploy profile-image --no-verify-jwt
 //
 // `--no-verify-jwt` is intentional: Firebase tokens are verified below with
-// Google's public certificates. Never expose SUPABASE_SERVICE_ROLE_KEY.
+// Google's public certificates. Never expose STORAGE_SERVICE_ROLE_KEY.
 
 import { createClient } from 'npm:@supabase/supabase-js@2'
 import { importX509, jwtVerify } from 'npm:jose@5'
@@ -88,9 +92,12 @@ Deno.serve(async (request) => {
     if (!token) return json({ error: 'Missing Firebase authentication token.' }, 401)
     const uid = await verifyFirebaseToken(token)
 
-    const url = Deno.env.get('SUPABASE_URL')
-    const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
-    if (!url || !serviceKey) return json({ error: 'Storage service is not configured.' }, 500)
+    const url = Deno.env.get('STORAGE_URL') ?? Deno.env.get('SUPABASE_URL')
+    const serviceKey =
+      Deno.env.get('STORAGE_SERVICE_ROLE_KEY') ?? Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+    if (!url || !serviceKey) {
+      return json({ error: 'Storage service is not configured.' }, 500)
+    }
     const supabase = createClient(url, serviceKey, {
       auth: { persistSession: false, autoRefreshToken: false },
     })
