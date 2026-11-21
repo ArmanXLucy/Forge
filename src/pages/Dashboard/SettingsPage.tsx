@@ -29,6 +29,7 @@ import { useAuth } from '../../features/auth/AuthContext'
 import { useProfileStore, useProfileStats } from '../../store/useProfileStore'
 import { useActivityStore } from '../../store/useActivityStore'
 import { useDataStatus } from '../../hooks/useDataStatus'
+import { useSupabaseStorageHealth } from '../../hooks/useSupabaseStorageHealth'
 import { isFirebaseConfigured, missingFirebaseVariables } from '../../lib/firebase'
 import { isFirestoreConfigured } from '../../lib/firestore'
 import { isSupabaseConfigured } from '../../lib/supabase'
@@ -99,6 +100,7 @@ export default function SettingsPage() {
   const aiSessions = useActivityStore((s) => s.aiSessions)
   const clearActivity = useActivityStore((s) => s.clearActivity)
   const { isCloud } = useDataStatus()
+  const storageHealth = useSupabaseStorageHealth()
   const { completion, xp, completedMissions } = useProfileStats()
   const navigate = useNavigate()
   const [confirmReset, setConfirmReset] = useState(false)
@@ -235,7 +237,7 @@ export default function SettingsPage() {
                 { label: 'Experience', value: profile ? EXPERIENCE_LABELS[profile.experience] : '—' },
                 { label: 'Training days', value: trainingDays || '—' },
                 { label: 'Database', value: isCloud ? 'Firestore' : 'Local cache' },
-                { label: 'Photos', value: isProfileImageStorageConfigured ? 'Supabase' : 'Not configured' },
+                { label: 'Photos', value: storageHealth === 'ok' ? 'Supabase' : 'Not ready' },
               ].map((item) => (
                 <div key={item.label}>
                   <p className="text-[9px] font-bold uppercase tracking-[0.12em] text-charcoal/30">
@@ -247,7 +249,7 @@ export default function SettingsPage() {
             </div>
           </section>
 
-          <ProfilePhotoCard />
+          <ProfilePhotoCard storageReady={storageHealth === 'ok'} />
 
           <section className="rounded-2xl border border-charcoal/10 bg-white p-5 sm:p-6">
             <div className="flex items-center gap-2">
@@ -501,7 +503,22 @@ export default function SettingsPage() {
                   <p className="text-[11px] font-semibold text-charcoal">Supabase Storage</p>
                   <p className="mt-0.5 text-[9px] text-charcoal/35">Profile photo bucket</p>
                 </div>
-                <StatusPill ok={isSupabaseConfigured || isProfileImageStorageConfigured} />
+                <StatusPill
+                  ok={storageHealth === 'ok'}
+                  label={
+                    storageHealth === 'ok'
+                      ? 'Connected'
+                      : storageHealth === 'checking'
+                        ? 'Checking'
+                        : storageHealth === 'missing-bucket'
+                          ? 'Bucket missing'
+                          : storageHealth === 'error'
+                            ? 'Unreachable'
+                          : isProfileImageStorageConfigured
+                            ? 'Configured'
+                            : 'Not configured'
+                  }
+                />
               </div>
             </div>
 

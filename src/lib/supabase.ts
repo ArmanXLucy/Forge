@@ -31,4 +31,5 @@ if (isSupabaseConfigured && supabaseUrl && supabaseAnonKey) {
 
 export { client as supabase }
 export const supabaseProjectUrl = supabaseUrl ?? null
+export const supabasePublishableKey = supabaseAnonKey ?? null
 export const supabasePublishableKeyPresent = Boolean(supabaseAnonKey)

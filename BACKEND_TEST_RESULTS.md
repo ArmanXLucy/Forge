@@ -34,12 +34,16 @@ The real test account was created only for QA and deleted afterwards.
 
 | Test | Status | Evidence |
 | --- | --- | --- |
-| Firestore API enabled | **BLOCKED** | REST request returned `403 Cloud Firestore API has not been used in project forge-11cbf before or it is disabled` |
-| Real Firestore create/read/update/delete | **BLOCKED** | Cannot operate until Firestore is enabled and the database is created |
-| Real Firestore security rules active | **BLOCKED** | Rules are written but not deployed to the real project |
-| Real-account offline fallback | PASS | Data saved locally, survived reload, and Settings showed `SYNC ISSUE` / local fallback |
-| Cloud sync warning visible | PASS | Dashboard banner and Settings connection card displayed the failure |
-| Application remains usable while Firestore is unavailable | PASS | Overview, Nutrition and Settings loaded with 0 console errors |
+| Firestore API enabled | PASS | Firestore database `(default)` created; API no longer returns the “not enabled” error |
+| Authenticated Firestore write | PASS | REST `PATCH` with a real Firebase ID token returned `200` |
+| Real app signup → Firestore profile write | PASS | `ensureUserAccount` and `saveQuickStart` wrote the live user document |
+| Real app profile/activity round-trip | PASS | Workout, meal, measurement, lifestyle, habit, AI session and preferences all hydrated after deleting local cache |
+| Real app mission completion | PASS | Mission status reloaded as `completed` |
+| Real Firestore create/read/update/delete | PASS | Created, read, updated and deleted the temporary user document and subcollection records |
+| Temporary live test cleanup | PASS | 7 subcollection documents, user document and Auth account deleted |
+| Live security rules match repository rules | **FAIL** | Current live rules accepted an authenticated write from a temporary test account; they are not yet the owner-only rules in `firestore.rules` |
+| Live cross-user isolation | **BLOCKED** | Requires deploying `firestore.rules` first; emulator rules PASS |
+| Real-account offline fallback (retained test) | PASS | Prior test saved locally, survived reload, and Settings showed local fallback |
 
 ---
 
@@ -113,10 +117,11 @@ A transient emulator warning (`auth/network-request-failed` while the emulator w
 
 | Test | Status | Evidence |
 | --- | --- | --- |
-| Supabase credentials configured | **BLOCKED** | `.env` has empty `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY` |
-| Bucket created | **BLOCKED** | No Supabase project available |
+| Supabase credentials present | PASS | `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY` and upload-function URL are populated |
+| Supabase project host resolves | **FAIL** | DNS lookup for `forge.supabase.co` returned `ENOTFOUND`; the project URL is invalid or the project is not ready |
+| Bucket created | **BLOCKED** | Cannot reach the project host |
 | Policies applied | **BLOCKED** | SQL provided but not executed |
-| Edge Function deployed | **BLOCKED** | No Supabase project/access token |
+| Edge Function deployed | **BLOCKED** | Cannot reach the project host |
 | Upload profile image | **BLOCKED** | Upload UI correctly disabled with configuration message |
 | Replace profile image | **BLOCKED** | Same |
 | Delete profile image | **BLOCKED** | Same |
@@ -221,7 +226,7 @@ No files inside `ml/` or `public/models/` were modified.
 
 | Item | Status |
 | --- | --- |
-| Real Firestore deployment | BLOCKED |
+| Real Firestore security-rule deployment | **FAIL** — deploy required |
 | Real Firestore rules behavior | BLOCKED (emulator rules PASS) |
 | Real Firestore pagination at scale | NOT TESTED |
 | Supabase bucket/policies | BLOCKED |

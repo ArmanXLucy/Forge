@@ -382,8 +382,9 @@ Summary:
 - Data reconstruction after deleting local cache and reloading: **PASS**.
 - Rapid mission start → complete ordering: **PASS** after removing undefined Firestore fields and serialising writes.
 - Real Firebase Auth login and session reload: **PASS** with a temporary test account that was deleted afterwards.
-- Real Firestore connection: **BLOCKED** — Cloud Firestore API is disabled for `forge-11cbf`.
-- Supabase Storage upload/replace/delete: **BLOCKED** — no Supabase project or credentials.
+- Real Firestore connection: **PASS** — database is live and the full profile/activity round-trip succeeded.
+- Live Firestore rules: **FAIL** — the current console rules are permissive; deploy `firestore.rules` before production.
+- Supabase Storage upload/replace/delete: **BLOCKED** — credentials are present but `forge.supabase.co` does not resolve.
 - Image validation and path traversal guard: **PASS**.
 - Real-account fallback with Firestore unavailable: **PASS** — data saved locally and surfaced a sync warning.
 - Responsive sweep: **104 checks, 0 overflow, 0 missing H1, 0 console errors**.
@@ -412,9 +413,9 @@ Summary:
 
 ## 15. Failures and incomplete integrations
 
-1. **Real Firestore is not enabled.** All production Firestore reads/writes are blocked until the console setup is completed.
-2. **No Supabase project exists.** Profile photo upload cannot be verified until credentials, bucket and policies are created.
-3. **Firestore rules are not deployed to the real project.** They were verified locally with the Firestore emulator.
+1. **Live Firestore rules are still permissive.** The database is live and the app works, but authenticated test writes were accepted beyond the intended owner-only rules. Deploy `firestore.rules` before real use.
+2. **Supabase URL is invalid.** `forge.supabase.co` returns `ENOTFOUND`; use the exact project URL from Supabase Project Settings → API.
+3. **Firestore rules are verified in the emulator but not yet deployed to the real project.**
 4. **Google sign-in** was preserved but not automated.
 5. **Account deletion** requires a trusted server operation to delete the Firebase Auth user and all Firestore data. The UI marks it as unavailable.
 6. **Paginated history UI** is not implemented; current histories load in full.
@@ -425,14 +426,14 @@ Summary:
 
 ## 16. Remaining manual setup steps
 
-1. Enable **Cloud Firestore** in Firebase project `forge-11cbf`.
-2. Create the default Firestore database.
-3. Deploy `firestore.rules` and `firestore.indexes.json`.
-4. Create a Supabase project.
+1. ~~Enable Cloud Firestore~~ — done.
+2. ~~Create the default Firestore database~~ — done.
+3. **Deploy `firestore.rules` immediately**; the current live rules are permissive.
+4. **Correct the Supabase project URL** — `forge.supabase.co` does not resolve.
 5. Create the public `profile-images` bucket.
 6. Run `supabase/storage-policies.sql`.
 7. Deploy `supabase/functions/profile-image`.
-8. Add `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY` and `VITE_SUPABASE_UPLOAD_FUNCTION_URL` to `.env`.
+8. Confirm `.env` contains the corrected URL, publishable key and function URL.
 9. Set `FIREBASE_PROJECT_ID`, `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` as Edge Function secrets.
 10. Restart the Vite dev server.
-11. Re-run the live Firestore and Supabase tests.
+11. Re-run the live Supabase upload and cross-user tests.

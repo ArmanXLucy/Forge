@@ -13,7 +13,7 @@ import {
   validateProfileImage,
 } from '../../services/cloud/storageService'
 
-export function ProfilePhotoCard() {
+export function ProfilePhotoCard({ storageReady = true }: { storageReady?: boolean }) {
   const { user } = useAuth()
   const profile = useProfileStore((s) => s.profile)
   const avatarUrl = useProfileStore((s) => s.avatarUrl)
@@ -29,7 +29,7 @@ export function ProfilePhotoCard() {
   const [error, setError] = useState<string | null>(null)
 
   const name = profile?.name ?? user?.displayName ?? 'Athlete'
-  const canUpload = Boolean(user && !user.isDemo && isProfileImageStorageConfigured)
+  const canUpload = Boolean(user && !user.isDemo && isProfileImageStorageConfigured && storageReady)
 
   useEffect(() => {
     if (!file) {
@@ -55,6 +55,10 @@ export function ProfilePhotoCard() {
       setError(
         'Photo storage is not configured yet. Add the Supabase URL, publishable key and upload function URL.',
       )
+      return
+    }
+    if (!storageReady) {
+      setError('Photo storage is not ready yet. Create the profile-images bucket in Supabase and reload Settings.')
       return
     }
     const validation = validateProfileImage(selected)
