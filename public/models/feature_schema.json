@@ -1,0 +1,188 @@
+{
+  "feature_order": [
+    "Age",
+    "Weight_kg",
+    "Height_cm",
+    "BMI",
+    "Gender",
+    "Goal",
+    "Equipment",
+    "Experience",
+    "Injury"
+  ],
+  "numeric_features": [
+    "Age",
+    "Weight_kg",
+    "Height_cm",
+    "BMI"
+  ],
+  "categorical_features": [
+    "Gender",
+    "Goal",
+    "Equipment",
+    "Experience",
+    "Injury"
+  ],
+  "categorical_values": {
+    "Gender": [
+      "Female",
+      "Male"
+    ],
+    "Goal": [
+      "Athletic Performance",
+      "CrossFit",
+      "Endurance",
+      "Flexibility",
+      "General Health",
+      "Marathon Training",
+      "Muscle Gain",
+      "Powerlifting",
+      "Strength",
+      "Tone Up",
+      "Weight Loss"
+    ],
+    "Equipment": [
+      "Bodyweight Only",
+      "Full Home Gym",
+      "Gym Membership",
+      "Home Dumbbells",
+      "Yoga Mat"
+    ],
+    "Experience": [
+      "Advanced",
+      "Beginner",
+      "Intermediate",
+      "Unknown"
+    ],
+    "Injury": [
+      "Ankle",
+      "Back",
+      "Knee",
+      "None",
+      "Shoulder",
+      "Unknown"
+    ]
+  },
+  "derived_features": {
+    "BMI": "Weight_kg / (Height_cm / 100)^2, computed before inference"
+  },
+  "onnx_inputs": [
+    {
+      "name": "Age",
+      "shape": [
+        null,
+        1
+      ],
+      "type": "tensor(float)"
+    },
+    {
+      "name": "Weight_kg",
+      "shape": [
+        null,
+        1
+      ],
+      "type": "tensor(float)"
+    },
+    {
+      "name": "Height_cm",
+      "shape": [
+        null,
+        1
+      ],
+      "type": "tensor(float)"
+    },
+    {
+      "name": "BMI",
+      "shape": [
+        null,
+        1
+      ],
+      "type": "tensor(float)"
+    },
+    {
+      "name": "Gender",
+      "shape": [
+        null,
+        1
+      ],
+      "type": "tensor(string)"
+    },
+    {
+      "name": "Goal",
+      "shape": [
+        null,
+        1
+      ],
+      "type": "tensor(string)"
+    },
+    {
+      "name": "Equipment",
+      "shape": [
+        null,
+        1
+      ],
+      "type": "tensor(string)"
+    },
+    {
+      "name": "Experience",
+      "shape": [
+        null,
+        1
+      ],
+      "type": "tensor(string)"
+    },
+    {
+      "name": "Injury",
+      "shape": [
+        null,
+        1
+      ],
+      "type": "tensor(string)"
+    }
+  ],
+  "onnx_outputs": [
+    {
+      "name": "label",
+      "shape": [
+        null
+      ],
+      "type": "tensor(int64)"
+    },
+    {
+      "name": "probabilities",
+      "shape": [
+        null,
+        24
+      ],
+      "type": "tensor(float)"
+    }
+  ],
+  "target_labels": [
+    "3-Day Full Body Mix",
+    "5x3x1 Strength Program",
+    "5x5 Compound Lifts",
+    "Advanced Calisthenics",
+    "Bodyweight Circuit",
+    "Core Stability, Yoga & Walking",
+    "Daily 30-min Bodyweight Flow",
+    "Dumbbell Upper/Lower Split",
+    "Full Body Dumbbell Complex",
+    "HIIT with Dumbbells",
+    "High Reps Low Weight Sculpting",
+    "Jump Rope & Burpee Intervals",
+    "Long Distance Running Plan",
+    "Lower Body Bodyweight & Hiking",
+    "Lower Body Power & Stationary Bike",
+    "Metabolic Resistance Training",
+    "Olympic Lifting & Plyometrics",
+    "Push-Pull-Legs Split (Hypertrophy)",
+    "Seated Upper Body Strength & Rowing",
+    "Swimming & Upper Body Machines",
+    "Treadmill Intervals & Circuit Training",
+    "Upper Body Calisthenics & Core",
+    "WOD & High Intensity Functional Training",
+    "Yoga & Mobility Flow"
+  ],
+  "model_version": "1.0.0",
+  "notes": "Inputs are raw values; one-hot encoding and scaling are inside the ONNX graph."
+}

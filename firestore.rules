@@ -89,6 +89,22 @@ service cloud.firestore {
         allow create, update: if isOwner(uid) && ownsUserId(uid);
         allow delete: if isOwner(uid) || canManageRoles();
       }
+
+      // Mission answers used by the AI workout plan. Owner-only.
+      match /mission_answers/{missionId} {
+        allow read: if isOwner(uid) || isAdmin();
+        allow create, update: if isOwner(uid) && request.resource.data.userId == uid;
+        allow delete: if isOwner(uid) || canManageRoles();
+      }
+
+      // Generated plans. Client-side ONNX generation writes these today, so the
+      // owner may write their own documents. When the inference API is added,
+      // switch create/update to `if false` and let the Admin SDK write them.
+      match /workout_recommendations/{recommendationId} {
+        allow read: if isOwner(uid) || isAdmin();
+        allow create, update: if isOwner(uid) && request.resource.data.userId == uid;
+        allow delete: if isOwner(uid) || canManageRoles();
+      }
     }
 
     // Admin collection-group reads (overview / monitoring / analytics).
@@ -108,6 +124,12 @@ service cloud.firestore {
       allow read: if isAdmin();
     }
     match /{path=**}/lifestyle_logs/{docId} {
+      allow read: if isAdmin();
+    }
+    match /{path=**}/workout_recommendations/{docId} {
+      allow read: if isAdmin();
+    }
+    match /{path=**}/mission_answers/{docId} {
       allow read: if isAdmin();
     }
 

@@ -29,6 +29,7 @@ import { ProfilePhotoCard } from '../../components/settings/ProfilePhotoCard'
 import { useAuth } from '../../features/auth/AuthContext'
 import { useProfileStore, useProfileStats } from '../../store/useProfileStore'
 import { useActivityStore } from '../../store/useActivityStore'
+import { useRecommendationStore } from '../../store/useRecommendationStore'
 import { useDataStatus } from '../../hooks/useDataStatus'
 import { useSupabaseStorageHealth } from '../../hooks/useSupabaseStorageHealth'
 import { isFirebaseConfigured, missingFirebaseVariables } from '../../lib/firebase'
@@ -159,6 +160,7 @@ export default function SettingsPage() {
 
   const handleResetProfile = () => {
     resetAllData()
+    useRecommendationStore.getState().clear()
     toast.success('Local profile cache cleared. Cloud records were not deleted.')
     navigate('/onboarding', { replace: true })
   }

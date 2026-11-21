@@ -16,6 +16,12 @@ import {
   updateUserAvatar,
 } from '../services/cloud/firestoreRepository'
 import { friendlyCloudError, withTimeout } from '../services/cloud/errors'
+import type { MissionAnswerMap, MissionAnswers } from '../features/workout-recommendation/types'
+import {
+  fetchMissionAnswers,
+  localRecommendationRepository,
+  persistMissionAnswers,
+} from '../features/workout-recommendation/data/recommendationRepository'
 
 export interface ProfileHydrateOptions {
   cloud: boolean
@@ -28,6 +34,7 @@ interface ProfileState {
   uid: string | null
   profile: QuickStartProfile | null
   progress: Record<string, MissionProgress>
+  answers: MissionAnswerMap
   avatarUrl: string | null
   avatarPath: string | null
   accountStatus: 'active' | 'suspended'
@@ -47,6 +54,7 @@ interface ProfileState {
     answeredFields: number,
     totalFields: number,
   ) => void
+  saveMissionAnswers: (missionId: string, values: MissionAnswers) => void
   setAvatar: (url: string, path: string) => Promise<void>
   removeAvatar: () => Promise<void>
   resetAllData: () => void
@@ -88,6 +96,7 @@ export const useProfileStore = create<ProfileState>((set, get) => ({
   uid: null,
   profile: null,
   progress: {},
+  answers: {},
   avatarUrl: null,
   avatarPath: null,
   accountStatus: 'active',
@@ -100,6 +109,7 @@ export const useProfileStore = create<ProfileState>((set, get) => ({
   hydrate: async (uid, options = { cloud: false }) => {
     const localProfile = localProfileRepository.getQuickStart(uid)
     const saved = localProfileRepository.getMissionProgress(uid)
+    const localAnswers = localRecommendationRepository.getAnswers(uid)
     const progress = mergedProgress(saved)
     const cloudEnabled = Boolean(options.cloud && isFirestoreConfigured)
 
@@ -107,6 +117,7 @@ export const useProfileStore = create<ProfileState>((set, get) => ({
       uid,
       profile: localProfile,
       progress,
+      answers: localAnswers,
       avatarUrl: options.photoURL ?? null,
       avatarPath: null,
       accountStatus: 'active',
@@ -130,12 +141,14 @@ export const useProfileStore = create<ProfileState>((set, get) => ({
           photoURL: options.photoURL ?? null,
         })
         const account = await getUserRecord(uid)
-        let cloudProgress = await getMissionProgress(uid)
-        let profile = account?.profile ?? null
-        return { account, cloudProgress, profile }
+        const cloudProgress = await getMissionProgress(uid)
+        const cloudAnswers = await fetchMissionAnswers(uid)
+        const profile = account?.profile ?? null
+        return { account, cloudProgress, cloudAnswers, profile }
       })())
       const account = cloudResult.account
       let cloudProgress = cloudResult.cloudProgress
+      const cloudAnswers = cloudResult.cloudAnswers
       let profile = cloudResult.profile
 
       // One-time migration of existing local data for this account. Cloud data
@@ -152,6 +165,7 @@ export const useProfileStore = create<ProfileState>((set, get) => ({
       set({
         profile,
         progress: mergedProgress(cloudProgress),
+        answers: Object.keys(cloudAnswers).length ? cloudAnswers : localAnswers,
         avatarUrl:
           account?.avatarUrl ??
           (account?.avatarCleared ? null : account?.photoURL) ??
@@ -178,6 +192,7 @@ export const useProfileStore = create<ProfileState>((set, get) => ({
       uid: null,
       profile: null,
       progress: {},
+      answers: {},
       avatarUrl: null,
       avatarPath: null,
       accountStatus: 'active',
@@ -273,6 +288,17 @@ export const useProfileStore = create<ProfileState>((set, get) => ({
     }
   },
 
+  saveMissionAnswers: (missionId, values) => {
+    const { uid, answers, cloudEnabled } = get()
+    if (!uid) return
+    const next = { ...answers, [missionId]: values }
+    localRecommendationRepository.saveAnswers(uid, next)
+    set({ answers: next })
+    if (cloudEnabled) {
+      settleCloud(set, () => persistMissionAnswers(uid, missionId, values))
+    }
+  },
+
   setAvatar: async (url, path) => {
     const { uid, cloudEnabled } = get()
     if (!uid) throw new Error('No signed-in account.')
@@ -323,7 +349,8 @@ export const useProfileStore = create<ProfileState>((set, get) => ({
     const { uid } = get()
     if (!uid) return
     localProfileRepository.clear(uid)
-    set({ profile: null, progress: initialMissionProgress() })
+    localRecommendationRepository.clear(uid)
+    set({ profile: null, progress: initialMissionProgress(), answers: {} })
   },
 }))
 

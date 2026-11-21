@@ -31,6 +31,17 @@ export const MISSIONS: MissionDefinition[] = [
         title: 'Core composition',
         description: 'Use your latest measurement. Estimates are fine — we refine them later.',
         fields: [
+          {
+            id: 'gender',
+            label: 'Sex used for training calculations',
+            type: 'select',
+            help: 'Optional. Used only to personalise your generated plan.',
+            options: [
+              { value: 'female', label: 'Female' },
+              { value: 'male', label: 'Male' },
+              { value: 'unspecified', label: 'Prefer not to say' },
+            ],
+          },
           numberField('weight', 'Body weight', 'kg', '78.4', { required: true, min: 30, max: 300 }),
           numberField('bodyFat', 'Body fat percentage', '%', '18.5', { min: 3, max: 70 }),
           numberField('leanMass', 'Lean muscle mass', 'kg', '63.2', { min: 10, max: 150 }),

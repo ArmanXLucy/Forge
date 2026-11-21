@@ -16,6 +16,7 @@ const OverviewPage = lazy(() => import('./pages/Dashboard/OverviewPage'))
 const MissionsPage = lazy(() => import('./pages/Dashboard/MissionsPage'))
 const MissionDetailPage = lazy(() => import('./pages/Dashboard/MissionDetailPage'))
 const WorkoutsPage = lazy(() => import('./pages/Dashboard/WorkoutsPage'))
+const WorkoutRecommendationPage = lazy(() => import('./pages/Dashboard/WorkoutRecommendationPage'))
 const NutritionPage = lazy(() => import('./pages/Dashboard/NutritionPage'))
 const ProgressPage = lazy(() => import('./pages/Dashboard/ProgressPage'))
 const LifestylePage = lazy(() => import('./pages/Dashboard/LifestylePage'))
@@ -127,6 +128,7 @@ export default function App() {
             <Route path="missions" element={<MissionsPage />} />
             <Route path="missions/:missionId" element={<MissionDetailPage />} />
             <Route path="workouts" element={<WorkoutsPage />} />
+            <Route path="workout-recommendation" element={<WorkoutRecommendationPage />} />
             <Route path="nutrition" element={<NutritionPage />} />
             <Route path="progress" element={<ProgressPage />} />
             <Route path="lifestyle" element={<LifestylePage />} />

@@ -28,6 +28,7 @@ export const dashboardNav = [
   { label: 'Overview', to: '/dashboard', icon: LayoutDashboard, end: true },
   { label: 'My Missions', to: '/dashboard/missions', icon: Target },
   { label: 'Workout Plans', to: '/dashboard/workouts', icon: Dumbbell },
+  { label: 'AI Plan', to: '/dashboard/workout-recommendation', icon: Brain, badge: 'New' },
   { label: 'Nutrition', to: '/dashboard/nutrition', icon: Apple },
   { label: 'Progress', to: '/dashboard/progress', icon: LineChart },
   { label: 'Lifestyle', to: '/dashboard/lifestyle', icon: MoonStar },

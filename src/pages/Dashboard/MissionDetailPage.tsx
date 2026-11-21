@@ -45,6 +45,16 @@ function buildDefaults(missionId: string): MissionValues {
   return values
 }
 
+function normaliseAnswers(values: MissionValues): Record<string, string | number | boolean | string[]> {
+  return Object.fromEntries(
+    Object.entries(values).filter(([, value]) => {
+      if (value === undefined || value === null) return false
+      if (typeof value === 'number' && Number.isNaN(value)) return false
+      return true
+    }),
+  )
+}
+
 function DemoPhotoUploader() {
   const [preview, setPreview] = useState<{ url: string; name: string } | null>(null)
 
@@ -117,18 +127,30 @@ export default function MissionDetailPage() {
   const completeMission = useProfileStore((s) => s.completeMission)
   const resetMission = useProfileStore((s) => s.resetMission)
   const setMissionFieldProgress = useProfileStore((s) => s.setMissionFieldProgress)
+  const savedAnswers = useProfileStore((s) => s.answers)
+  const saveMissionAnswers = useProfileStore((s) => s.saveMissionAnswers)
   const [reviewing, setReviewing] = useState(false)
   const [confirmOpen, setConfirmOpen] = useState(false)
+  const [pendingValues, setPendingValues] = useState<MissionValues | null>(null)
 
-  const defaultValues = useMemo(() => buildDefaults(missionId), [missionId])
+  const defaultValues = useMemo(() => {
+    const base = buildDefaults(missionId)
+    const saved = savedAnswers[missionId]
+    return saved ? { ...base, ...saved } : base
+  }, [missionId, savedAnswers])
   const {
     register,
     handleSubmit,
     control,
     watch,
+    reset,
     formState: { errors, touchedFields },
   } = useForm<MissionValues>({ defaultValues, mode: 'onTouched' })
   const watchedValues = watch()
+
+  useEffect(() => {
+    reset(defaultValues)
+  }, [defaultValues, reset])
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior })
@@ -158,26 +180,34 @@ export default function MissionDetailPage() {
   const next = nextMission(progress)
   const showForm = !isCompleted || reviewing
 
-  const finish = () => {
+  const persistAndFinish = (values: MissionValues) => {
+    saveMissionAnswers(mission.id, normaliseAnswers(values))
     startMission(mission.id)
     completeMission(mission.id)
     setConfirmOpen(false)
     setReviewing(false)
+    setPendingValues(null)
     toast.success(`${mission.title} complete — +${mission.xp} XP`)
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
-  const onSubmit = () => {
+  const finish = () => {
+    persistAndFinish(pendingValues ?? watchedValues)
+  }
+
+  const onSubmit = (values: MissionValues) => {
+    setPendingValues(values)
     if (mission.sensitive) {
       setConfirmOpen(true)
       return
     }
-    finish()
+    persistAndFinish(values)
   }
 
   const saveForLater = () => {
+    saveMissionAnswers(mission.id, normaliseAnswers(watchedValues))
     startMission(mission.id)
-    toast.success('Mission marked in progress. Answers are not stored.')
+    toast.success('Answers saved. You can finish this mission any time.')
   }
 
   const fieldError = (id: string) =>
@@ -463,8 +493,8 @@ export default function MissionDetailPage() {
                   {mission.title} locked in<span className="text-orange-500">.</span>
                 </h2>
                 <p className="mt-2 max-w-lg text-[13px] leading-relaxed text-charcoal/50">
-                  Your status and XP have been updated. The answers you entered were intentionally not
-                  stored because secure medical storage is not enabled.
+                  Your status, XP and answers have been saved to your account. They will be used to
+                  personalise your AI workout plan.
                 </p>
               </div>
             </div>
@@ -506,8 +536,8 @@ export default function MissionDetailPage() {
               {[
                 'Your completion percentage and XP update immediately across the dashboard.',
                 mission.sensitive
-                  ? 'Sensitive answers are discarded in this build. Your coach can collect them securely outside this form.'
-                  : 'Your answers stay in this session only and are not persisted.',
+                  ? 'Sensitive answers are saved to your account so the plan engine can respect your limitations.'
+                  : 'Your answers are saved to your account and used for plan personalisation.',
                 'Advanced assessments unlock after all seven missions are complete.',
               ].map((text) => (
                 <li key={text} className="flex items-start gap-2.5 text-[12px] leading-relaxed text-charcoal/55">
@@ -526,7 +556,7 @@ export default function MissionDetailPage() {
                 <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-orange-600" />
                 <div>
                   <p className="text-[12px] font-semibold text-orange-900">
-                    Sensitive mission — session only
+                    Sensitive mission — account protected
                   </p>
                   <p className="mt-1 text-[11px] leading-relaxed text-orange-900/70">
                     Do not enter real medical documents or prescription details. Everything you type
@@ -588,7 +618,7 @@ export default function MissionDetailPage() {
             <div className="mt-4 rounded-2xl border border-charcoal/10 bg-white p-3 shadow-soft">
               <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                 <p className="px-1 text-[10px] leading-relaxed text-charcoal/35">
-                  Answers are not persisted.
+                  Answers are saved to your account for plan personalisation.
                 </p>
                 <div className="flex flex-col gap-2 sm:flex-row">
                   <Button type="button" variant="outline" size="sm" onClick={saveForLater}>
@@ -627,7 +657,7 @@ export default function MissionDetailPage() {
                 <div className="flex items-center justify-between text-[10px]">
                   <span className="text-charcoal/35">Storage</span>
                   <span className="font-semibold text-charcoal/60">
-                    {mission.sensitive ? 'This page only' : 'Status only'}
+                    {mission.sensitive ? 'Account (secured)' : 'Account'}
                   </span>
                 </div>
               </div>
@@ -636,9 +666,7 @@ export default function MissionDetailPage() {
                   <ShieldCheck className="h-3 w-3 text-orange-500" /> Privacy note
                 </p>
                 <p className="mt-1.5 text-[10px] leading-relaxed text-charcoal/40">
-                  {mission.sensitive
-                    ? 'Medical data is never written to browser storage or Firestore.'
-                    : 'Only status and XP persist; form answers are discarded.'}
+                  Answers are stored under your account and used only to generate and update your training plans.
                 </p>
               </div>
             </div>
@@ -675,9 +703,9 @@ export default function MissionDetailPage() {
               Complete this mission?
             </h2>
             <p className="mt-2.5 text-[12px] leading-relaxed text-charcoal/55">
-              This mission contains sensitive information. Your answers are discarded
-              immediately — only the completion status and {mission.xp} XP are recorded. They are
-              never written to Firestore, Supabase or browser storage.
+              This mission contains sensitive information. Your answers are saved to your
+              account so the plan engine can respect your limitations. Only you and authorised
+              coaching tools can read them.
             </p>
             <div className="mt-5 flex flex-col gap-2 sm:flex-row sm:justify-end">
               <Button variant="outline" size="sm" onClick={() => setConfirmOpen(false)}>

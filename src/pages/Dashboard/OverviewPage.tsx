@@ -59,6 +59,7 @@ import { ACHIEVEMENTS, MISSIONS } from '../../data/missions'
 import { WORKOUTS } from '../../data/dashboard'
 import { MOTIVATION } from '../../data/dashboard'
 import type { Achievement } from '../../types'
+import { RecommendationSpotlight } from '../../features/workout-recommendation/components/RecommendationSpotlight'
 
 const achievementIcons: Record<Achievement['icon'], typeof Award> = {
   footprints: Footprints,
@@ -265,6 +266,8 @@ export default function OverviewPage() {
           </div>
         </div>
       </section>
+
+      <RecommendationSpotlight className="mt-4" />
 
       <div className="mt-4 grid gap-4 xl:grid-cols-[1.55fr_1fr]">
         <section className="relative overflow-hidden rounded-2xl bg-orange-500 p-5 text-white sm:p-6">

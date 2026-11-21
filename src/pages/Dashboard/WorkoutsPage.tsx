@@ -23,6 +23,7 @@ import {
 import { buttonClasses } from '../../components/ui/Button'
 import { Badge } from '../../components/ui/Badge'
 import { WorkoutPlayer, type WorkoutResult } from '../../components/dashboard/WorkoutPlayer'
+import { RecommendationSpotlight } from '../../features/workout-recommendation/components/RecommendationSpotlight'
 import { WORKOUTS } from '../../data/dashboard'
 import { WEEKDAYS } from '../../lib/constants'
 import { useActivityStore } from '../../store/useActivityStore'
@@ -193,6 +194,8 @@ export default function WorkoutsPage() {
           source={weekWorkouts.length ? source : 'empty'}
         />
       </div>
+
+      <RecommendationSpotlight className="mt-4" showSchedule />
 
       <section className="mt-4 overflow-hidden rounded-2xl bg-charcoal text-white">
         <div className="grid lg:grid-cols-[1.25fr_1fr]">

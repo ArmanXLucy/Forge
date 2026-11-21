@@ -117,8 +117,11 @@ export const authService = {
   configured: isFirebaseConfigured,
 
   subscribe(callback: (user: AppUser | null) => void) {
-    if (!isFirebaseConfigured || !auth) {
-      callback(getDemoSession())
+    // In local development an explicit demo session can be resumed even when
+    // Firebase is configured, so the demo workspace remains testable offline.
+    const devDemo = import.meta.env.DEV ? getDemoSession() : null
+    if (!isFirebaseConfigured || !auth || devDemo) {
+      callback(devDemo ?? getDemoSession())
       return () => undefined
     }
     return onAuthStateChanged(auth, (user) => callback(user ? toAppUser(user) : null))

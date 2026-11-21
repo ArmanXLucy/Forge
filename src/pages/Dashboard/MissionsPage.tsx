@@ -143,9 +143,9 @@ export default function MissionsPage() {
       <div className="mt-4 flex items-start gap-3 rounded-xl border border-amber-500/25 bg-amber-50 p-4 text-[12px] leading-relaxed text-amber-900">
         <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0" />
         <p>
-          <strong className="font-semibold">Safety first.</strong> No personalised exercise or
-          nutrition recommendations are generated until the Health Profile mission has been reviewed by
-          your coach. Sensitive answers are never stored or sent anywhere by this build.
+          <strong className="font-semibold">Safety first.</strong> Your AI workout plan stays locked
+          until all seven missions are completed and validated, including Health Profile. Answers are
+          stored in your account and used only to personalise your plan. This is not medical clearance.
         </p>
       </div>
 

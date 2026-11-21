@@ -1,0 +1,155 @@
+{
+  "onnxRuntime": "1.32.0",
+  "modelPath": "workout-recommendation\\artifacts\\workout_recommendation.onnx",
+  "modelBytes": 1617299,
+  "opset": 17,
+  "inputs": [
+    {
+      "name": "Age",
+      "shape": [
+        null,
+        1
+      ],
+      "type": "tensor(float)"
+    },
+    {
+      "name": "Weight_kg",
+      "shape": [
+        null,
+        1
+      ],
+      "type": "tensor(float)"
+    },
+    {
+      "name": "Height_cm",
+      "shape": [
+        null,
+        1
+      ],
+      "type": "tensor(float)"
+    },
+    {
+      "name": "BMI",
+      "shape": [
+        null,
+        1
+      ],
+      "type": "tensor(float)"
+    },
+    {
+      "name": "Gender",
+      "shape": [
+        null,
+        1
+      ],
+      "type": "tensor(string)"
+    },
+    {
+      "name": "Goal",
+      "shape": [
+        null,
+        1
+      ],
+      "type": "tensor(string)"
+    },
+    {
+      "name": "Equipment",
+      "shape": [
+        null,
+        1
+      ],
+      "type": "tensor(string)"
+    },
+    {
+      "name": "Experience",
+      "shape": [
+        null,
+        1
+      ],
+      "type": "tensor(string)"
+    },
+    {
+      "name": "Injury",
+      "shape": [
+        null,
+        1
+      ],
+      "type": "tensor(string)"
+    }
+  ],
+  "outputs": [
+    {
+      "name": "label",
+      "shape": [
+        null
+      ],
+      "type": "tensor(int64)"
+    },
+    {
+      "name": "probabilities",
+      "shape": [
+        null,
+        24
+      ],
+      "type": "tensor(float)"
+    }
+  ],
+  "schemaFeatureOrderMatches": true,
+  "expectedOutputs": [
+    "label",
+    "probabilities"
+  ],
+  "testSamples": 1426,
+  "labelAgreementWithHeldOutTargets": 1.0,
+  "meanConfidence": 1.0,
+  "minConfidence": 1.0,
+  "allClassesPredicted": true,
+  "predictedClassCount": 24,
+  "deterministicWithinBatch": true,
+  "latency": {
+    "1": {
+      "mean_batch_ms": 0.144,
+      "mean_per_sample_ms": 0.144
+    },
+    "32": {
+      "mean_batch_ms": 3.336,
+      "mean_per_sample_ms": 0.104
+    },
+    "256": {
+      "mean_batch_ms": 13.301,
+      "mean_per_sample_ms": 0.052
+    }
+  },
+  "edgeCases": {
+    "unknown_goal": {
+      "accepted": true,
+      "label": "Seated Upper Body Strength & Rowing",
+      "max_probability": 0.129817
+    },
+    "empty_goal": {
+      "accepted": true,
+      "label": "Seated Upper Body Strength & Rowing",
+      "max_probability": 0.129817
+    },
+    "unspecified_gender": {
+      "accepted": true,
+      "label": "High Reps Low Weight Sculpting",
+      "max_probability": 1.0
+    },
+    "bmi_out_of_range": {
+      "accepted": true,
+      "label": "High Reps Low Weight Sculpting",
+      "max_probability": 1.0
+    },
+    "integer_for_string": {
+      "accepted": false,
+      "error": "InvalidArgument: [ONNXRuntimeError] : 2 : INVALID_ARGUMENT : Unexpected input data type. Actual: (tensor(int64)) , expected: (tensor(string))"
+    }
+  },
+  "notes": [
+    "Label agreement uses the same stratified split seed as training (42).",
+    "Unknown or empty categorical values encode to an all-zero one-hot vector; the app validates values before inference.",
+    "Numeric ranges are validated in the app before inference; BMI is derived, never user supplied.",
+    "The dataset is synthetic and deterministic by input; 100% agreement does not imply real-world clinical effectiveness."
+  ]
+}
