@@ -24,6 +24,21 @@ import { buttonClasses } from '../../components/ui/Button'
 import { Badge } from '../../components/ui/Badge'
 import { WorkoutPlayer, type WorkoutResult } from '../../components/dashboard/WorkoutPlayer'
 import { RecommendationSpotlight } from '../../features/workout-recommendation/components/RecommendationSpotlight'
+import {
+  AiPlanHero,
+  AiProgramBlocks,
+  AiUpcomingSessions,
+  AiWeekGlance,
+} from '../../features/workout-recommendation/components/AiWorkoutSections'
+import { useWorkoutRecommendation } from '../../features/workout-recommendation/hooks/useWorkoutRecommendation'
+import {
+  buildProgramBlocks,
+  completedAiWeekdays,
+  nextAiDay,
+  planDurationWeeks,
+  toWorkoutSession,
+  trainingDays,
+} from '../../features/workout-recommendation/lib/planView'
 import { WORKOUTS } from '../../data/dashboard'
 import { WEEKDAYS } from '../../lib/constants'
 import { useActivityStore } from '../../store/useActivityStore'
@@ -83,6 +98,9 @@ export default function WorkoutsPage() {
   const workouts = useActivityStore((s) => s.workouts)
   const addWorkout = useActivityStore((s) => s.addWorkout)
   const profile = useProfileStore((s) => s.profile)
+  const recommendation = useWorkoutRecommendation()
+  const aiPlan = recommendation.active
+  const isAi = Boolean(aiPlan)
   const [expanded, setExpanded] = useState<string | null>(WORKOUTS[0].id)
   const [activeWorkout, setActiveWorkout] = useState<WorkoutSession | null>(null)
 
@@ -107,6 +125,24 @@ export default function WorkoutsPage() {
     ? Math.min(100, Math.round((weekWorkouts.length / plannedWorkouts.length) * 100))
     : 0
 
+  const aiDays = aiPlan ? trainingDays(aiPlan) : []
+  const aiCompleted = aiPlan ? completedAiWeekdays(aiPlan, workouts) : new Set<number>()
+  const aiNextDay = aiPlan ? nextAiDay(aiPlan, aiCompleted, today) : null
+  const aiAdherence = aiDays.length
+    ? Math.min(100, Math.round((aiCompleted.size / aiDays.length) * 100))
+    : 0
+  const aiDuration = aiPlan ? planDurationWeeks(aiPlan) : null
+  const aiBlocks = aiPlan ? buildProgramBlocks(recommendation.plans) : []
+  const aiNextSession = aiPlan && aiNextDay ? toWorkoutSession(aiPlan, aiNextDay, today) : null
+  const startNext = aiNextSession ?? nextPlanned
+  const statScheduled = isAi ? aiDays.length : plannedWorkouts.length
+  const statAdherence = isAi ? aiAdherence : adherence
+  const statPlanValue = isAi ? aiDuration ?? 'Open' : 8
+  const statPlanSuffix = isAi ? (aiDuration ? 'weeks' : 'ended') : 'weeks'
+  const statPlanNote = isAi
+    ? `${aiPlan?.predictedPlanCategory ?? 'AI plan'} · v${aiPlan?.version ?? 1}`
+    : 'Foundation programme'
+
   useEffect(() => {
     const startId = searchParams.get('start')
     if (!startId) return
@@ -122,6 +158,11 @@ export default function WorkoutsPage() {
     setExpanded(workout.id)
   }
 
+  const openAiDay = (day: Parameters<typeof toWorkoutSession>[1]) => {
+    if (!aiPlan) return
+    openWorkout(toWorkoutSession(aiPlan, day, today))
+  }
+
   const handleSave = (result: WorkoutResult) => {
     if (!activeWorkout) return
     addWorkout({
@@ -134,7 +175,7 @@ export default function WorkoutsPage() {
       totalExercises: result.totalExercises,
       source: 'plan',
     })
-    toast.success('Workout saved.')
+    toast.success(activeWorkout.id.startsWith('ai:') ? 'AI workout saved.' : 'Workout saved.')
   }
 
   return (
@@ -150,7 +191,7 @@ export default function WorkoutsPage() {
             </Link>
             <button
               type="button"
-              onClick={() => openWorkout(nextPlanned)}
+              onClick={() => openWorkout(startNext)}
               className={buttonClasses('primary', 'sm')}
             >
               <Play className="h-3.5 w-3.5 fill-current" /> Start workout
@@ -164,8 +205,8 @@ export default function WorkoutsPage() {
           icon={Check}
           label="Sessions this week"
           value={weekWorkouts.length}
-          suffix={`/ ${plannedWorkouts.length}`}
-          note={isCloud ? 'synced to your account' : 'saved on this device'}
+          suffix={`/ ${statScheduled}`}
+          note={isAi ? `${aiCompleted.size} AI ${aiCompleted.size === 1 ? 'session' : 'sessions'} completed` : isCloud ? 'synced to your account' : 'saved on this device'}
           accent
           source={weekWorkouts.length ? source : 'empty'}
         />
@@ -179,25 +220,34 @@ export default function WorkoutsPage() {
         />
         <StatCard
           icon={Layers}
-          label="Plan block"
-          value="8"
-          suffix="weeks"
-          note="Foundation programme"
-          source="sample"
+          label={isAi ? 'Plan duration' : 'Plan block'}
+          value={statPlanValue}
+          suffix={statPlanSuffix}
+          note={statPlanNote}
+          source={isAi ? (isCloud ? 'live' : 'local') : 'sample'}
         />
         <StatCard
           icon={Target}
           label="Plan adherence"
-          value={adherence}
+          value={statAdherence}
           suffix="%"
-          note={`${plannedWorkouts.length} planned sessions`}
+          note={`${statScheduled} scheduled ${isAi ? 'AI ' : ''}sessions`}
           source={weekWorkouts.length ? source : 'empty'}
         />
       </div>
 
-      <RecommendationSpotlight className="mt-4" showSchedule />
+      {isAi && aiPlan ? (
+        <AiPlanHero
+          plan={aiPlan}
+          nextDay={aiNextDay}
+          completed={aiCompleted}
+          onStart={openAiDay}
+        />
+      ) : (
+        <>
+          <RecommendationSpotlight className="mt-4" showSchedule />
 
-      <section className="mt-4 overflow-hidden rounded-2xl bg-charcoal text-white">
+          <section className="mt-4 overflow-hidden rounded-2xl bg-charcoal text-white">
         <div className="grid lg:grid-cols-[1.25fr_1fr]">
           <div className="relative p-5 sm:p-7">
             <div className="flex flex-wrap items-center gap-2">
@@ -304,8 +354,13 @@ export default function WorkoutsPage() {
             </ul>
           </div>
         )}
-      </section>
+          </section>
+        </>
+      )}
 
+      {isAi && aiPlan ? (
+        <AiWeekGlance plan={aiPlan} completed={aiCompleted} />
+      ) : (
       <section className="mt-4 rounded-2xl border border-charcoal/10 bg-white p-5 sm:p-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
@@ -380,7 +435,19 @@ export default function WorkoutsPage() {
           The weekly template is sample content. Completed markers are based on sessions {isCloud ? 'synced to your account' : 'saved locally'}.
         </p>
       </section>
+      )}
 
+      {isAi && aiPlan ? (
+        <div className="mt-4 grid gap-4 xl:grid-cols-[1.6fr_1fr]">
+          <AiUpcomingSessions
+            plan={aiPlan}
+            completed={aiCompleted}
+            nextDay={aiNextDay}
+            onStart={openAiDay}
+          />
+          <AiProgramBlocks blocks={aiBlocks} planCount={recommendation.plans.length} />
+        </div>
+      ) : (
       <div className="mt-4 grid gap-4 xl:grid-cols-[1.6fr_1fr]">
         <SectionCard
           eyebrow="Upcoming sessions"
@@ -492,6 +559,7 @@ export default function WorkoutsPage() {
           </div>
         </SectionCard>
       </div>
+      )}
 
       <SectionCard
         eyebrow="Workout history"
@@ -530,10 +598,10 @@ export default function WorkoutsPage() {
             </p>
             <button
               type="button"
-              onClick={() => openWorkout(nextPlanned)}
+              onClick={() => openWorkout(startNext)}
               className={buttonClasses('dark', 'sm', 'mt-4')}
             >
-              <Play className="h-3.5 w-3.5 fill-current" /> Start {nextPlanned.title}
+              <Play className="h-3.5 w-3.5 fill-current" /> Start {startNext.title}
             </button>
           </div>
         )}
