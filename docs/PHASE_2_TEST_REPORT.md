@@ -17,7 +17,7 @@ Only checks actually executed are marked PASS. Unverified items are listed separ
 | `npm run test:rules` | **37 passed**, 0 failed |
 | `npm run build` | **PASS** |
 | `npm run verify:assets` | **PASS** (6 assets + 2 contracts) |
-| `postbuild` model verification | **PASS** (public + dist) |
+| `postbuild` model verification | **PASS** (public + dist; JSON hashes normalized for LF/CRLF) |
 | `git diff --check` | **PASS** (only line-ending warnings) |
 | `render.yaml` YAML parse | **PASS** |
 

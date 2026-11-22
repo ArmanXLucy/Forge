@@ -14,8 +14,9 @@ const assets = [
   },
   {
     name: 'feature_schema.json',
-    bytes: 3669,
-    sha256: 'c6285162d8205b4121d21fb949069772b82826ef6a1873594548b3ed8b2ea9c4',
+    bytes: 3482,
+    sha256: 'ad373a1174590f28b1a8e910b0a7b0daaef80763a9e6e99bb4c978c736dd8f6c',
+    text: true,
     source: join(root, 'workout-recommendation', 'artifacts', 'feature_schema.json'),
   },
   {
@@ -35,8 +36,9 @@ const assets = [
   },
   {
     name: 'model_metadata.json',
-    bytes: 1986,
-    sha256: 'f3cf166f175620f8b750e3287b9f326bc7a8afbcdc4dd82619d7a6e479955411',
+    bytes: 1904,
+    sha256: 'ed1c8750fe61d6401918ece9e32560766969e6f54cf518ff1375142f595f02f8',
+    text: true,
   },
 ]
 
@@ -44,9 +46,14 @@ function digest(file) {
   return createHash('sha256').update(readFileSync(file)).digest('hex')
 }
 
+function canonicalBytes(bytes, text) {
+  if (!text) return bytes
+  return Buffer.from(bytes.toString('utf8').replace(/\r\n/g, '\n'), 'utf8')
+}
+
 function verifyFile(file, expected, label) {
   if (!existsSync(file)) throw new Error(`${label} is missing: ${file}`)
-  const bytes = readFileSync(file)
+  const bytes = canonicalBytes(readFileSync(file), expected.text)
   if (bytes.length !== expected.bytes) {
     throw new Error(`${label} size changed: expected ${expected.bytes}, got ${bytes.length}`)
   }
@@ -63,7 +70,9 @@ for (const asset of assets) {
     verifyFile(publicFile, asset, `public/models/${asset.name}`)
     if (asset.source) {
       if (!existsSync(asset.source)) throw new Error(`source artifact is missing: ${asset.source}`)
-      if (!readFileSync(publicFile).equals(readFileSync(asset.source))) {
+      const publicBytes = canonicalBytes(readFileSync(publicFile), asset.text)
+      const sourceBytes = canonicalBytes(readFileSync(asset.source), asset.text)
+      if (!publicBytes.equals(sourceBytes)) {
         throw new Error(`public copy differs from source artifact for ${asset.name}`)
       }
     }

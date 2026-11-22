@@ -83,7 +83,7 @@ Required values in the Render dashboard:
 - `VITE_SUPABASE_ANON_KEY`
 - `VITE_SUPABASE_UPLOAD_FUNCTION_URL`
 
-Build command: `npm ci && npm run build`  
+Build command: `npm ci --include=dev && npm run build`  
 Publish directory: `dist`  
 Node version: `.node-version` (`22.16.0`); `package.json` engines is `>=20 <23`.
 

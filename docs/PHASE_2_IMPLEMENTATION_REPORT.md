@@ -41,12 +41,13 @@ Not done:
 | File | Change | Why |
 |---|---|---|
 | `.env.example` | Rewritten | Removed leaked credential; added public/server-only sections with placeholders |
-| `render.yaml` | New | Free Render static site, `npm ci && npm run build`, `dist`, SPA rewrite, env prompts |
+| `render.yaml` | New | Render static site, explicit dev-dependency install, `SKIP_INSTALL_DEPS`, `dist`, SPA rewrite, env prompts |
 | `.node-version` | New | Pin Node 22.16.0 for host builds |
+| `.gitattributes` | New | Treat ONNX as binary and model JSON as LF text |
 | `package.json` | Scripts + engines | Added `verify:assets`, `postbuild` verification, Node engine range |
 | `vite.config.ts` | Resolve condition | Use ONNX Runtime external-WASM export; remove unused local WASM |
-| `scripts/verify-model-assets.mjs` | New | Verify six assets, hashes, source equality, 24/60-feature contracts, dist copies |
-| `tests/model-assets.test.ts` | New | 10 tests for hashes, artifact equality, schema, metadata, pinned runtime versions |
+| `scripts/verify-model-assets.mjs` | New | Verify six assets, canonical JSON hashes, source equality, 24/60-feature contracts, dist copies |
+| `tests/model-assets.test.ts` | New | 10 tests for canonical hashes, artifact equality, schema, metadata, pinned runtime versions |
 | `tests/firestore.rules.test.ts` | Updated | Full valid recommendation/mission fixtures + negative shape tests; 37 tests total |
 | `firestore.rules` | Updated | Mission-answer and recommendation shape validation; generic rule excludes sensitive collections |
 | `src/features/workout-recommendation/lib/inference.ts` | Error handling | WebAssembly guard and clearer browser/deployment failure message |
@@ -70,7 +71,7 @@ No file under `ml/`, `workout-recommendation/artifacts/`, `public/models/`, or `
 ### Render
 
 - Static site; no plan field (static sites are free by default).
-- Build: `npm ci && npm run build`.
+- Build: `npm ci --include=dev && npm run build`.
 - Publish: `dist`.
 - Rewrite: `/*` → `/index.html`.
 - Seven public env vars declared with `sync: false`.
@@ -143,7 +144,7 @@ Validation does not prove model authenticity. A client can still fabricate a str
 | `npm test` | 65 passed, 37 rules skipped by design |
 | `npm run test:rules` | 37/37 passed |
 | `npm run build` | PASS |
-| `postbuild` asset verification | PASS |
+| `postbuild` asset verification (LF/CRLF-safe) | PASS |
 | `npm run verify:assets` | PASS |
 | Static preview route checks | 9/9 HTTP 200 |
 | Production-config login smoke | PASS |

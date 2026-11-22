@@ -84,10 +84,11 @@ Not covered in Stage A:
 | Plan | Omit — static sites are free by default |
 | Branch | `main` |
 | Root directory | Repository root |
-| Build command | `npm ci && npm run build` |
+| Build command | `npm ci --include=dev && npm run build` |
 | Publish directory | `dist` |
 | SPA rewrite | `/*` → `/index.html` |
 | Auto-deploy | Blueprint/Git setting |
+| Automatic dependency install | Disabled (`SKIP_INSTALL_DEPS=true`); build command installs explicitly |
 | Node | `.node-version` / engines |
 | HTTPS | Automatic |
 | Persistent disk | None |
@@ -117,7 +118,7 @@ Set all seven public `VITE_` variables in the Render dashboard. See `PHASE_2_ENV
 If using the dashboard instead of a Blueprint:
 
 - Environment: Static Site
-- Build: `npm ci && npm run build`
+- Build: `npm ci --include=dev && npm run build`
 - Publish: `dist`
 - Rewrite: `/*` → `/index.html`
 - Add the same env vars.

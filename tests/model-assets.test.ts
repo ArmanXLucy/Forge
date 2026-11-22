@@ -9,8 +9,11 @@ function read(path: string) {
   return readFileSync(resolve(root, path))
 }
 
-function sha256(path: string) {
-  return createHash('sha256').update(read(path)).digest('hex')
+function sha256(path: string, text = false) {
+  const bytes = text
+    ? Buffer.from(read(path).toString('utf8').replace(/\r\n/g, '\n'), 'utf8')
+    : read(path)
+  return createHash('sha256').update(bytes).digest('hex')
 }
 
 const MODEL_ASSETS = [
@@ -21,8 +24,9 @@ const MODEL_ASSETS = [
   },
   {
     path: 'public/models/feature_schema.json',
-    bytes: 3669,
-    sha256: 'c6285162d8205b4121d21fb949069772b82826ef6a1873594548b3ed8b2ea9c4',
+    bytes: 3482,
+    sha256: 'ad373a1174590f28b1a8e910b0a7b0daaef80763a9e6e99bb4c978c736dd8f6c',
+    text: true,
   },
   {
     path: 'public/models/form_classifier_squat.onnx',
@@ -41,16 +45,20 @@ const MODEL_ASSETS = [
   },
   {
     path: 'public/models/model_metadata.json',
-    bytes: 1986,
-    sha256: 'f3cf166f175620f8b750e3287b9f326bc7a8afbcdc4dd82619d7a6e479955411',
+    bytes: 1904,
+    sha256: 'ed1c8750fe61d6401918ece9e32560766969e6f54cf518ff1375142f595f02f8',
+    text: true,
   },
 ]
 
 describe('production AI assets', () => {
   for (const asset of MODEL_ASSETS) {
-    it(`keeps ${asset.path} byte-identical`, () => {
-      expect(read(asset.path)).toHaveLength(asset.bytes)
-      expect(sha256(asset.path)).toBe(asset.sha256)
+    it(`keeps ${asset.path} contract-identical`, () => {
+      const bytes = asset.text
+        ? Buffer.from(read(asset.path).toString('utf8').replace(/\r\n/g, '\n'), 'utf8')
+        : read(asset.path)
+      expect(bytes).toHaveLength(asset.bytes)
+      expect(sha256(asset.path, asset.text)).toBe(asset.sha256)
     })
   }
 
@@ -58,9 +66,11 @@ describe('production AI assets', () => {
     expect(read('public/models/workout_recommendation.onnx').equals(
       read('workout-recommendation/artifacts/workout_recommendation.onnx'),
     )).toBe(true)
-    expect(read('public/models/feature_schema.json').equals(
-      read('workout-recommendation/artifacts/feature_schema.json'),
-    )).toBe(true)
+    const normalize = (path: string) =>
+      read(path).toString('utf8').replace(/\r\n/g, '\n')
+    expect(normalize('public/models/feature_schema.json')).toBe(
+      normalize('workout-recommendation/artifacts/feature_schema.json'),
+    )
   })
 
   it('keeps the 24-category recommendation contract and 9/2 tensor contract', () => {
