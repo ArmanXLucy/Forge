@@ -134,19 +134,44 @@ export const useProfileStore = create<ProfileState>((set, get) => ({
     if (!cloudEnabled) return
 
     try {
-      const cloudResult = await withTimeout((async () => {
+      const account = await withTimeout((async () => {
         await ensureUserAccount(uid, {
           email: options.email ?? null,
           displayName: options.displayName ?? localProfile?.name ?? null,
           photoURL: options.photoURL ?? null,
         })
-        const account = await getUserRecord(uid)
+        return getUserRecord(uid)
+      })())
+
+      // Load the root account before member subcollections. Suspended accounts
+      // may still read this document so the UI can explain the suspension, but
+      // the rules intentionally block their member data.
+      if (account?.accountStatus === 'suspended') {
+        set({
+          profile: account.profile ?? localProfile,
+          progress,
+          answers: localAnswers,
+          avatarUrl:
+            account.avatarUrl ??
+            (account.avatarCleared ? null : account.photoURL) ??
+            options.photoURL ??
+            null,
+          avatarPath: account.avatarPath ?? null,
+          accountStatus: 'suspended',
+          hydrated: true,
+          syncStatus: 'synced',
+          syncError: null,
+          lastSyncedAt: new Date().toISOString(),
+        })
+        return
+      }
+
+      const cloudResult = await withTimeout((async () => {
         const cloudProgress = await getMissionProgress(uid)
         const cloudAnswers = await fetchMissionAnswers(uid)
         const profile = account?.profile ?? null
-        return { account, cloudProgress, cloudAnswers, profile }
+        return { cloudProgress, cloudAnswers, profile }
       })())
-      const account = cloudResult.account
       let cloudProgress = cloudResult.cloudProgress
       const cloudAnswers = cloudResult.cloudAnswers
       let profile = cloudResult.profile

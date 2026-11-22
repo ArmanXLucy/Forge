@@ -83,7 +83,7 @@ export const MISSIONS: MissionDefinition[] = [
       {
         title: 'Medical background',
         description:
-          'This form is a demo interaction. Nothing you type is stored in your browser or sent anywhere in this stage.',
+          'Answers are saved to your account and used to make your training plan safer. Do not enter medical document numbers, prescriptions or laboratory reports.',
         fields: [
           {
             id: 'conditions',
@@ -243,7 +243,7 @@ export const MISSIONS: MissionDefinition[] = [
       {
         title: 'Preferences & restrictions',
         description:
-          'Demo interaction only. Allergy and intolerance answers are not stored in this frontend build.',
+          'Answers are saved to your account so nutrition guidance can account for allergies and intolerances. Do not enter medical documents.',
         fields: [
           {
             id: 'diet',

@@ -10,6 +10,22 @@ service cloud.firestore {
       return signedIn() && request.auth.uid == uid;
     }
 
+    function userRef(uid) {
+      return /databases/$(database)/documents/users/$(uid);
+    }
+
+    // Suspension is enforced for member data, but owners can still read their
+    // root user document and use support so the suspension is explainable.
+    function isSuspended(uid) {
+      return exists(userRef(uid)) &&
+        'accountStatus' in get(userRef(uid)).data &&
+        get(userRef(uid)).data.accountStatus == 'suspended';
+    }
+
+    function activeOwner(uid) {
+      return isOwner(uid) && !isSuspended(uid);
+    }
+
     function adminRef() {
       return /databases/$(database)/documents/adminUsers/$(request.auth.uid);
     }
@@ -74,36 +90,126 @@ service cloud.firestore {
         request.resource.data.description.size() <= 5000;
     }
 
+    // Shape validation only. Passing these checks does not prove that a genuine
+    // browser ONNX inference produced the plan; ownership and document shape are
+    // enforceable here, model authenticity is not.
+    function validMissionAnswerWrite(uid, missionId) {
+      return request.resource.data.userId == uid &&
+        request.resource.data.missionId == missionId &&
+        request.resource.data.schemaVersion == 1 &&
+        request.resource.data.values is map &&
+        request.resource.data.updatedAt is timestamp &&
+        request.resource.data.keys().hasAll([
+          'missionId', 'userId', 'values', 'updatedAt', 'schemaVersion'
+        ]) &&
+        request.resource.data.keys().hasOnly([
+          'missionId', 'userId', 'values', 'updatedAt', 'schemaVersion'
+        ]);
+    }
+
+    function validRecommendationWrite(uid, recommendationId) {
+      return request.resource.data.userId == uid &&
+        request.resource.data.recommendationId == recommendationId &&
+        request.resource.data.modelSource == 'onnx-web' &&
+        request.resource.data.modelVersion is string &&
+        request.resource.data.modelVersion.size() <= 40 &&
+        request.resource.data.predictedPlanCategory is string &&
+        request.resource.data.predictedPlanCategory.size() > 0 &&
+        request.resource.data.predictedPlanCategory.size() <= 120 &&
+        request.resource.data.planTemplateId is string &&
+        request.resource.data.planTemplateId.size() <= 80 &&
+        request.resource.data.planTitle is string &&
+        request.resource.data.planTitle.size() > 0 &&
+        request.resource.data.planTitle.size() <= 200 &&
+        request.resource.data.fitnessGoal is string &&
+        request.resource.data.datasetGoal is string &&
+        request.resource.data.missionSnapshot is map &&
+        request.resource.data.missionSnapshot.schemaVersion == 1 &&
+        request.resource.data.missionSnapshot.answers is map &&
+        request.resource.data.missionSnapshot.profile is map &&
+        request.resource.data.schedule is list &&
+        request.resource.data.schedule.size() == 7 &&
+        request.resource.data.safety is map &&
+        request.resource.data.createdAt is string &&
+        request.resource.data.updatedAt is timestamp &&
+        request.resource.data.isActive is bool &&
+        request.resource.data.isOutdated is bool &&
+        request.resource.data.version is int &&
+        request.resource.data.version >= 1 &&
+        request.resource.data.version <= 10000 &&
+        request.resource.data.generationStatus in ['ready', 'superseded'] &&
+        request.resource.data.inferenceMs is number &&
+        request.resource.data.inferenceMs >= 0 &&
+        request.resource.data.inferenceMs <= 600000 &&
+        request.resource.data.confidence is number &&
+        request.resource.data.confidence >= 0 &&
+        request.resource.data.confidence <= 1 &&
+        request.resource.data.classProbabilities is list &&
+        request.resource.data.classProbabilities.size() <= 24 &&
+        request.resource.data.keys().hasAll([
+          'recommendationId', 'userId', 'modelVersion', 'modelSource',
+          'predictedPlanCategory', 'planTemplateId', 'planTitle', 'fitnessGoal',
+          'datasetGoal', 'missionSnapshot', 'schedule', 'safety', 'createdAt',
+          'updatedAt', 'isActive', 'isOutdated', 'version', 'generationStatus',
+          'inferenceMs', 'confidence', 'classProbabilities'
+        ]) &&
+        request.resource.data.keys().hasOnly([
+          'recommendationId', 'userId', 'modelVersion', 'modelSource',
+          'predictedPlanCategory', 'planTemplateId', 'planTitle', 'fitnessGoal',
+          'datasetGoal', 'missionSnapshot', 'schedule', 'safety', 'createdAt',
+          'updatedAt', 'isActive', 'isOutdated', 'version', 'generationStatus',
+          'inferenceMs', 'confidence', 'classProbabilities'
+        ]);
+    }
+
     // ---------------------------------------------------------------- users
     match /users/{uid} {
+      // A suspended owner must still be able to read the root document so the
+      // application can display the suspension reason and support path.
       allow get, list: if isOwner(uid) || isAdmin();
-      allow create: if isOwner(uid) && request.resource.data.uid == uid;
+      allow create: if isOwner(uid) &&
+        request.resource.data.uid == uid &&
+        !request.resource.data.keys().hasAny([
+          'accountStatus', 'adminNote', 'role', 'permissions', 'isAdmin', 'adminRole'
+        ]);
       allow update: if (isOwner(uid) &&
+          resource.data.get('accountStatus', 'active') != 'suspended' &&
           (!('uid' in request.resource.data) || request.resource.data.uid == uid) &&
-          !request.resource.data.diff(resource.data).affectedKeys().hasAny(['accountStatus', 'adminNote'])) ||
+          !request.resource.data.diff(resource.data).affectedKeys().hasAny([
+            'accountStatus', 'adminNote', 'role', 'permissions', 'isAdmin', 'adminRole'
+          ])) ||
         canManageUsers();
-      allow delete: if isOwner(uid) || canManageRoles();
+      allow delete: if (isOwner(uid) &&
+        resource.data.get('accountStatus', 'active') != 'suspended') || canManageRoles();
 
       match /{collection}/{docId} {
-        allow read: if isOwner(uid) || isAdmin();
-        allow create, update: if isOwner(uid) && ownsUserId(uid);
-        allow delete: if isOwner(uid) || canManageRoles();
+        // Support managers need ordinary member context for tickets, but not
+        // medical answers or client-generated plans. Owner access is blocked
+        // while suspended; support remains available outside this subtree.
+        allow read: if activeOwner(uid) || canManageUsers() ||
+          (isAdmin() && collection != 'mission_answers' && collection != 'workout_recommendations');
+        // Sensitive collections are written only through their validated rules below.
+        allow create, update: if activeOwner(uid) && ownsUserId(uid) &&
+          collection != 'mission_answers' && collection != 'workout_recommendations';
+        allow delete: if activeOwner(uid) || canManageRoles();
       }
 
-      // Mission answers used by the AI workout plan. Owner-only.
+      // Mission answers used by the AI workout plan. Owner-only for members;
+      // sensitive answers are limited to user-management administrators.
       match /mission_answers/{missionId} {
-        allow read: if isOwner(uid) || isAdmin();
-        allow create, update: if isOwner(uid) && request.resource.data.userId == uid;
-        allow delete: if isOwner(uid) || canManageRoles();
+        allow read: if activeOwner(uid) || canManageUsers();
+        allow create, update: if activeOwner(uid) && validMissionAnswerWrite(uid, missionId);
+        allow delete: if activeOwner(uid) || canManageRoles();
       }
 
       // Generated plans. Client-side ONNX generation writes these today, so the
-      // owner may write their own documents. When the inference API is added,
-      // switch create/update to `if false` and let the Admin SDK write them.
+      // owner may write their own documents. Validation restricts ownership,
+      // required fields and the top-level shape; it cannot prove model inference.
+      // When server-side inference exists, switch create/update to `if false`.
       match /workout_recommendations/{recommendationId} {
-        allow read: if isOwner(uid) || isAdmin();
-        allow create, update: if isOwner(uid) && request.resource.data.userId == uid;
-        allow delete: if isOwner(uid) || canManageRoles();
+        allow read: if activeOwner(uid) || canManageUsers();
+        allow create, update: if activeOwner(uid) && validRecommendationWrite(uid, recommendationId);
+        allow delete: if activeOwner(uid) || canManageRoles();
       }
     }
 
@@ -127,10 +233,10 @@ service cloud.firestore {
       allow read: if isAdmin();
     }
     match /{path=**}/workout_recommendations/{docId} {
-      allow read: if isAdmin();
+      allow read: if canManageUsers();
     }
     match /{path=**}/mission_answers/{docId} {
-      allow read: if isAdmin();
+      allow read: if canManageUsers();
     }
 
     // ----------------------------------------------------------- admin roles
@@ -204,24 +310,20 @@ service cloud.firestore {
 
     // ------------------------------------------------------ content catalog
     match /workoutPlans/{docId} {
-      allow read: if isAdmin();
-      allow write: if canManageContent();
+      allow read, write: if canManageContent();
     }
     match /exerciseLibrary/{docId} {
-      allow read: if isAdmin();
-      allow write: if canManageContent();
+      allow read, write: if canManageContent();
     }
     match /nutritionPlans/{docId} {
-      allow read: if isAdmin();
-      allow write: if canManageContent();
+      allow read, write: if canManageContent();
     }
     match /missionSettings/{missionId} {
       allow read: if signedIn();
       allow write: if canManageContent();
     }
     match /platformSettings/{docId} {
-      allow read: if isAdmin();
-      allow write: if canManagePlatform();
+      allow read, write: if canManagePlatform();
     }
 
     match /{document=**} {

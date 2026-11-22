@@ -208,7 +208,8 @@ export default function OnboardingPage() {
                 </p>
                 <p className="mt-2 text-[11px] leading-relaxed text-white/40">
                   Only non-sensitive basics are stored locally in this frontend demo. Health details
-                  are collected later and never persisted client-side.
+                  are collected later and saved to your account when you submit the Health Profile
+                  mission.
                 </p>
               </div>
               <button
@@ -421,8 +422,8 @@ export default function OnboardingPage() {
                           <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-orange-500" />
                           <p className="text-[11px] leading-relaxed text-charcoal/50">
                             These basic figures are saved locally so your dashboard can resume. Health
-                            conditions, medications and medical details are never stored in this
-                            frontend build.
+                            conditions, medications and other medical details are saved to your account
+                            only when you complete the Health Profile mission.
                           </p>
                         </div>
                       </div>

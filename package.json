@@ -3,15 +3,21 @@
   "private": true,
   "version": "1.0.0",
   "type": "module",
+  "engines": {
+    "node": ">=20 <23"
+  },
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
     "lint": "tsc --noEmit",
     "model:assets": "node scripts/copy-model-assets.mjs",
+    "verify:assets": "node scripts/verify-model-assets.mjs",
     "predev": "npm run model:assets",
     "prebuild": "npm run model:assets",
-    "test": "vitest run"
+    "postbuild": "node scripts/verify-model-assets.mjs dist",
+    "test": "vitest run",
+    "test:rules": "npx --yes firebase-tools@13.35.1 emulators:exec --only firestore --project forge-phase1-rules \"npx vitest run tests/firestore.rules.test.ts\""
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.1",

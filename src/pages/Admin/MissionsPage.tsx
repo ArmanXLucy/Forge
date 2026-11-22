@@ -86,7 +86,7 @@ export default function AdminMissionsPage() {
                     <p className="text-[12px] font-semibold text-charcoal">{mission.title}</p>
                     <p className="mt-0.5 max-w-xl text-[10px] leading-relaxed text-charcoal/40">{mission.description}</p>
                     <p className="mt-1.5 text-[9px] uppercase tracking-[0.1em] text-charcoal/30">
-                      {mission.sensitive ? 'Sensitive · answers not stored' : 'Standard'} · {mission.estimatedMinutes} min · {stats.completed}/{stats.started} completed
+                      {mission.sensitive ? 'Sensitive · answers protected' : 'Standard'} · {mission.estimatedMinutes} min · {stats.completed}/{stats.started} completed
                     </p>
                   </div>
                 </div>
@@ -107,7 +107,7 @@ export default function AdminMissionsPage() {
         </ul>
       </AdminPanel>
       <p className="mt-3 text-[9px] leading-relaxed text-charcoal/35">
-        Visibility writes to `missionSettings` in Firestore. Sensitive mission answers remain ephemeral and are never stored in the admin panel.
+        Visibility writes to `missionSettings` in Firestore. Sensitive mission answers are not displayed in this admin panel and are readable only by user-management administrators under the Firestore rules.
       </p>
     </div>
   )

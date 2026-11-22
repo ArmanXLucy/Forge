@@ -67,7 +67,7 @@ export interface MissionDefinition {
   description: string
   estimatedMinutes: number
   xp: number
-  /** True when the form contains health, medical or image data we must not persist client-side. */
+  /** True when the form contains health, medical or image data. Current builds persist submitted answers, so privacy copy must describe that storage. */
   sensitive: boolean
   safetyCritical?: boolean
   sections: MissionSection[]

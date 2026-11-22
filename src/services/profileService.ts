@@ -5,9 +5,9 @@ import { MISSIONS } from '../data/missions'
  * Frontend-only profile repository.
  *
  * Only NON-SENSITIVE data is persisted here: the Quick Start profile and mission
- * status. Sensitive mission answers (medical, medication, allergies, reports,
- * photographs) are intentionally never written to localStorage — they live in
- * component memory and are discarded. A secure backend will own them in Stage 2.
+ * status. Mission answers, including sensitive health and nutrition fields, are
+ * persisted separately by the recommendation repository in localStorage and,
+ * when cloud sync is enabled, Firestore.
  */
 export interface ProfileRepository {
   getQuickStart(uid: string): QuickStartProfile | null

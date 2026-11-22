@@ -17,8 +17,8 @@ export function DemoNotice({
       <p className="leading-relaxed">
         <strong className="font-semibold">Frontend demo.</strong>{' '}
         {sensitive
-          ? 'Your answers stay in this page only — they are not stored in your browser or sent anywhere. Secure health-data storage arrives with the Stage 2 backend.'
-          : 'Mission status and XP are saved in this browser. Form answers are not persisted until the backend is connected.'}
+          ? 'Mission answers, including health and nutrition fields, are saved to your account and cached in this browser so your plan can respect them. Do not enter medical document numbers or prescriptions.'
+          : 'Mission answers and progress are saved to your account and cached in this browser for personalisation.'}
       </p>
     </div>
   )

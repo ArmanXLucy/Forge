@@ -67,6 +67,12 @@ export function loadFeatureSchema(): Promise<FeatureSchema> {
 }
 
 async function getSession() {
+  if (typeof WebAssembly === 'undefined') {
+    throw new InferenceError(
+      'model-unavailable',
+      'This browser does not support WebAssembly, so the workout model cannot run locally.',
+    )
+  }
   if (!sessionPromise) {
     sessionPromise = (async () => {
       const response = await fetch(MODEL_URL)
@@ -80,7 +86,7 @@ async function getSession() {
       sessionPromise = null
       throw new InferenceError(
         'model-unavailable',
-        'The workout model could not be loaded. Check that the ONNX artifact is deployed.',
+        'The workout model could not be loaded in this browser. Check WebAssembly support, your connection, and that the ONNX artifact is deployed.',
         { cause: error },
       )
     })

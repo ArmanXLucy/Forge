@@ -28,23 +28,34 @@ export default function PrivacyPage() {
             <h2 className="font-display text-xl uppercase text-charcoal">1. About this project</h2>
             <p className="mt-2">
               This website is a frontend demonstration for Forge Athletic, a fictional fitness coaching
-              brand. It is built as Stage 1 of a three-stage project. No production backend, payment
-              processing or secure medical-record system is connected.
+              brand. It is built as Stage 1 of a three-stage project. No custom application server,
+              payment processing or secure medical-record system is connected. Firebase Authentication,
+              Cloud Firestore and Supabase Storage provide the current data services.
             </p>
           </section>
           <section>
             <h2 className="font-display text-xl uppercase text-charcoal">2. What is stored</h2>
             <p className="mt-2">
-              When you use the demo, the following non-sensitive information may be saved in your
-              browser&apos;s localStorage: your Quick Start basics (name, age, height, current weight,
-              goal, experience, available training days), mission completion status, completion
-              timestamps and XP, and a demo-session flag.
+              When you use the demo, your Quick Start basics (name, age, height, current weight, goal,
+              experience, available training days), mission completion status, completion timestamps
+              and XP, mission answers, generated workout plans, workout and nutrition logs, progress
+              records, recovery entries and AI Coach session summaries may be saved in your
+              browser&apos;s localStorage. A demo-session flag may also be saved.
             </p>
             <p className="mt-2">
-              Medical conditions, medications, allergies, food intolerances, laboratory reports, progress
-              photographs and all mission form answers are deliberately <strong>not</strong> persisted in
-              this build. Sensitive mission forms are demonstration interactions and their answers are
-              discarded when you leave the page.
+              When Firebase is configured and you sign in, those records are also stored in Cloud
+              Firestore under your authenticated user ID. Mission answers include the Health Profile
+              and Nutrition Profile fields, such as conditions, injuries, medications, allergies,
+              intolerances, restrictions and clearance. Do not enter prescription numbers, laboratory
+              reports or other medical documents. Authorised user-management administrators can read
+              mission answers under the Firestore security rules; support staff cannot read the
+              sensitive mission-answer collection.
+            </p>
+            <p className="mt-2">
+              If you upload a profile image, the image file is stored in Supabase Storage and its URL
+              and path are stored in Firestore. Mission progress photographs are preview-only and are
+              not uploaded. Camera frames and video from AI Coach are processed in the browser and are
+              not stored.
             </p>
           </section>
           <section>

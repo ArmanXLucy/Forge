@@ -559,9 +559,10 @@ export default function MissionDetailPage() {
                     Sensitive mission — account protected
                   </p>
                   <p className="mt-1 text-[11px] leading-relaxed text-orange-900/70">
-                    Do not enter real medical documents or prescription details. Everything you type
-                    here stays in this page memory and is discarded when you leave. Nothing is stored
-                    in browser storage, Firestore or Supabase.
+                    Do not enter real medical documents or prescription details. Your answers are saved
+                    to your account so the plan engine can respect your limitations. They are available
+                    to you, stored in this browser cache, and readable by authorised user-management
+                    administrators under the Firestore rules.
                   </p>
                 </div>
               </div>

@@ -80,6 +80,14 @@ function formatCameraError(error: unknown) {
   return (error as Error)?.message ?? 'The camera could not be started.'
 }
 
+function formatSessionError(error: unknown) {
+  const message = (error as Error)?.message ?? ''
+  if (/webassembly|wasm|onnx|mediapipe|pose|dynamically imported|model metadata|form models/i.test(message)) {
+    return 'The AI models could not start in this browser. Check your connection and that WebAssembly is enabled, then retry. Camera video never leaves your device.'
+  }
+  return formatCameraError(error)
+}
+
 function buildCues(exercise: ExerciseKey, score: ScoreResult) {
   const features = score.features
   const cues: string[] = []
@@ -418,7 +426,7 @@ export default function AICoachPage() {
       beginSession('camera')
     } catch (cameraError) {
       stopStream()
-      setError(formatCameraError(cameraError))
+      setError(formatSessionError(cameraError))
       setPhase('idle')
     }
   }
@@ -445,7 +453,7 @@ export default function AICoachPage() {
       beginSession('video')
     } catch (videoError) {
       stopStream()
-      setError((videoError as Error)?.message ?? 'The video could not be loaded.')
+      setError(formatSessionError(videoError))
       setPhase('idle')
     }
   }

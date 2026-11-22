@@ -392,13 +392,13 @@ export default function SettingsPage() {
               </div>
               <div className="rounded-xl border border-red-500/15 bg-red-50/60 p-4">
                 <p className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.12em] text-red-800">
-                  <ShieldCheck className="h-3.5 w-3.5" /> Never stored in Firestore
+                  <ShieldCheck className="h-3.5 w-3.5" /> Sensitive data boundaries
                 </p>
                 <ul className="mt-2 space-y-1.5 text-[10px] leading-relaxed text-red-900/70">
-                  <li>Medical conditions, medications and allergies</li>
-                  <li>Laboratory reports or health documents</li>
-                  <li>Mission form answers and progress photographs</li>
-                  <li>Camera frames or video</li>
+                  <li>Health and nutrition mission answers are stored under your account</li>
+                  <li>Conditions, medications and allergies are part of those answers; do not enter prescription numbers or documents</li>
+                  <li>Laboratory reports and progress photographs are not uploaded</li>
+                  <li>Camera frames and video are not stored</li>
                 </ul>
               </div>
             </div>
@@ -602,7 +602,7 @@ export default function SettingsPage() {
               <div>
                 <p className="text-[12px] font-semibold text-orange-900">Deliberate boundaries</p>
                 <ul className="mt-2 space-y-1.5 text-[10px] leading-relaxed text-orange-900/70">
-                  <li>• Medical and mission answers are never persisted.</li>
+                  <li>• Mission answers, including health and nutrition fields, are saved to your account and cached in this browser.</li>
                   <li>• No email or push notification provider is connected.</li>
                   <li>• No generative AI chat. AI Coach runs local model inference only.</li>
                   <li>• Account deletion needs a trusted server operation.</li>
