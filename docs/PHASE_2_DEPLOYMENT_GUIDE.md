@@ -69,7 +69,7 @@ Not covered in Stage A:
 
 | File | Purpose |
 |---|---|
-| `render.yaml` | Render static-site blueprint, free plan, SPA rewrite, env var placeholders |
+| `render.yaml` | Render static-site blueprint, SPA rewrite, env var placeholders |
 | `.node-version` | Pins Node 22.16.0 for Render builds |
 | `package.json` `engines` | Accepts Node 20–22 |
 | `vercel.json` | Existing SPA rewrite for the Vercel alternative |
@@ -81,7 +81,7 @@ Not covered in Stage A:
 | Setting | Value |
 |---|---|
 | Type | Static Site (`runtime: static`) |
-| Plan | Free |
+| Plan | Omit — static sites are free by default |
 | Branch | `main` |
 | Root directory | Repository root |
 | Build command | `npm ci && npm run build` |

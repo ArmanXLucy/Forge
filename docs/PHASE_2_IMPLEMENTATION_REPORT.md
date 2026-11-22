@@ -14,7 +14,7 @@ Phase 2 prepared the existing Vite/React SPA for free static hosting without mov
 
 Implemented:
 
-- Render Static Site blueprint with SPA rewrite and free plan.
+- Render Static Site blueprint with SPA rewrite. Static sites are free by default, so no plan field is set.
 - Node version pinning for reproducible host builds.
 - Sanitized `.env.example`; removed a real-looking Supabase service-role value.
 - Environment-variable and free-service documentation.
@@ -69,7 +69,7 @@ No file under `ml/`, `workout-recommendation/artifacts/`, `public/models/`, or `
 
 ### Render
 
-- Static site, free plan.
+- Static site; no plan field (static sites are free by default).
 - Build: `npm ci && npm run build`.
 - Publish: `dist`.
 - Rewrite: `/*` → `/index.html`.
