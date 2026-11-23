@@ -55,8 +55,8 @@ export const WEEKDAYS = [
 
 export const NAV_ITEMS = [
   { label: 'Home', href: '/' },
-  { label: 'Programs', href: '/#programs' },
+  { label: 'Features', href: '/#programs' },
   { label: 'How It Works', href: '/#how-it-works' },
   { label: 'About', href: '/#about' },
-  { label: 'Contact', href: '/#contact' },
+  { label: 'Start', href: '/#contact' },
 ]

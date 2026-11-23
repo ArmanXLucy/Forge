@@ -72,7 +72,7 @@ export function BrandIntro({ onComplete }: { onComplete: () => void }) {
               Forge Athletic Co.
             </p>
             <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/35">
-              Lausanne · CH
+              Web app · Browser AI
             </p>
           </div>
 
@@ -85,7 +85,7 @@ export function BrandIntro({ onComplete }: { onComplete: () => void }) {
                 className="eyebrow-light"
               >
                 <span className="h-1.5 w-1.5 rounded-full bg-orange-500" />
-                Personal coaching · since 2014
+                Profile-led training · on-device AI
               </motion.p>
               <div className="mt-4 overflow-hidden">
                 <motion.p
@@ -116,14 +116,14 @@ export function BrandIntro({ onComplete }: { onComplete: () => void }) {
               className="relative hidden w-[240px] shrink-0 overflow-hidden rounded-2xl border border-white/10 sm:block lg:w-[280px]"
             >
               <img
-                src="/images/hero-athlete.jpg"
+                src="/images/app/overview-tall.webp"
                 alt=""
                 aria-hidden="true"
                 className="aspect-[4/5] w-full object-cover object-top opacity-80"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-charcoal/80 via-transparent to-transparent" />
               <p className="absolute inset-x-0 bottom-0 p-4 text-[9px] font-bold uppercase tracking-[0.2em] text-white/60">
-                Private studio · Lausanne
+                Inside the workspace
               </p>
             </motion.div>
           </div>
@@ -131,7 +131,7 @@ export function BrandIntro({ onComplete }: { onComplete: () => void }) {
           <div className="container-forge pb-7">
             <div className="flex items-center justify-between gap-6">
               <p className="text-[9px] font-bold uppercase tracking-[0.22em] text-white/30">
-                Entering the studio
+                Opening your workspace
               </p>
               <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-white/25">
                 Click to skip

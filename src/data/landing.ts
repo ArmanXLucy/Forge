@@ -8,104 +8,111 @@ import type {
 
 export const DISCIPLINES = [
   'Strength',
+  'Muscle',
   'Fat Loss',
-  'Mobility',
   'Endurance',
   'Nutrition',
   'Recovery',
-  'Performance',
+  'Mobility',
   'Longevity',
+]
+
+export const HERO_STATS = [
+  { value: '24', label: 'Plan templates' },
+  { value: '03', label: 'Form checks' },
+  { value: '07', label: 'Profile missions' },
+  { value: '100%', label: 'Browser AI' },
 ]
 
 export const STUDIO_TABS = [
   {
-    id: 'studio',
+    id: 'workspace',
     number: '01',
-    label: 'The Studio',
-    title: 'A private training floor, reserved for you.',
-    body: 'No crowded racks. No waiting for equipment. Every session takes place in a fully equipped private studio built for focused, unhurried coaching — strength machines, free weights and cardio, all in one calm space.',
-    image: '/images/studio.jpg',
-    stat: 'Private access',
+    label: 'Workspace',
+    title: 'Your whole training week, in one view.',
+    body: 'The dashboard brings your next workout, profile progress, nutrition, recovery and recent sessions together. It is a working training workspace, not a static plan you print once and forget.',
+    image: '/images/app/overview-wide.webp',
+    stat: 'Overview',
   },
   {
-    id: 'coach',
+    id: 'missions',
     number: '02',
-    label: 'The Coach',
-    title: 'Certified coaching, personal by design.',
-    body: 'Strength and nutrition coaching led by a certified trainer with a background in sport science. Every programme is written from your assessment — never copied from a template.',
-    image: '/images/coach-portrait.jpg',
-    stat: 'Certified & insured',
+    label: 'Missions',
+    title: 'Seven missions. One complete profile.',
+    body: 'Body metrics, health, training history, nutrition, lifestyle, goals and mindset are collected one mission at a time. The training-relevant answers shape the plan; the rest completes your workspace context and stays editable.',
+    image: '/images/app/missions-wide.webp',
+    stat: 'Assessment',
   },
   {
-    id: 'athlete',
+    id: 'ai-plan',
     number: '03',
-    label: 'The Method',
-    title: 'Athlete-level structure. Everyday-life realism.',
-    body: 'Progressive overload, honest recovery and nutrition that fits your kitchen. We borrow the structure of elite sport and translate it into a plan you can sustain around work, family and travel.',
-    image: '/images/strength.jpg',
-    stat: 'Built for real life',
+    label: 'AI Plan',
+    title: 'A weekly plan drawn from your profile.',
+    body: 'Forge uses your age, body metrics, goal, equipment, experience and safety category to select from 24 training styles, then builds a structured week with sets, reps, rest and progression.',
+    image: '/images/app/ai-plan-wide.webp',
+    stat: 'Personalised',
   },
   {
-    id: 'mission',
+    id: 'form-coach',
     number: '04',
-    label: 'The Mission',
-    title: 'Health, confidence and performance — in that order.',
-    body: 'Our mission is to make you stronger, move better and feel at home in your body. Aesthetics follow. We measure what matters and adjust every four to six weeks.',
-    image: '/images/gallery6.jpg',
-    stat: 'Long-term results',
+    label: 'Form Coach',
+    title: 'Camera-based form checks, on your device.',
+    body: 'Squat, bicep curl and push-up sessions use MediaPipe pose tracking and browser-based ONNX classifiers to score movement, count reps and surface simple cues. Camera frames stay in the browser.',
+    image: '/images/app/ai-coach-wide.webp',
+    stat: 'On-device',
   },
 ]
 
 export const PROGRAMS: ServiceProgram[] = [
   {
-    id: 'personal-training',
+    id: 'ai-plan',
     number: '01',
-    title: 'Personal Training',
-    tagline: 'One coach. One athlete. Your session.',
+    title: 'AI Workout Plan',
+    tagline: 'A structured week, built from your profile.',
     description:
-      'Private, one-to-one coaching with a programme built around your assessment, schedule and goals. Technique, load and recovery are adjusted in real time.',
-    image: '/images/coach.jpg',
-    includes: ['Private studio access', 'Individual programme', 'Technique-led coaching'],
+      'A 24-class recommendation model turns your goal, body metrics, experience, equipment and safety category into a weekly plan. It runs locally in your browser — no external AI service and no API key.',
+    image: '/images/app/ai-plan-wide.webp',
+    includes: ['24 training styles', 'Equipment-aware', 'Sets, reps and rest'],
   },
   {
-    id: 'strength',
+    id: 'form-coach',
     number: '02',
-    title: 'Strength & Muscle',
-    tagline: 'Built, not borrowed.',
+    title: 'Form Coach',
+    tagline: 'A second opinion while you train.',
     description:
-      'Structured progressive overload for visible muscle, durable joints and measurable strength. Programming follows your benchmarks, not a generic split.',
-    image: '/images/strength.jpg',
-    includes: ['Strength testing', 'Block periodisation', 'Form video review'],
+      'Use your camera or upload a video for squat, bicep curl and push-up checks. Pose landmarks feed three trained classifiers that estimate form quality, count reps and show the cues that need attention.',
+    image: '/images/app/ai-coach-wide.webp',
+    includes: ['3 exercise checks', 'Rep counting', 'Camera stays local'],
   },
   {
-    id: 'fat-loss',
+    id: 'missions',
     number: '03',
-    title: 'Fat Loss & Fitness',
-    tagline: 'Sustainable, not punishing.',
+    title: 'Guided Profile',
+    tagline: 'Seven missions instead of one long form.',
     description:
-      'A calm, evidence-led approach to body composition: strength training, daily movement and nutrition habits you can keep after the programme ends.',
-    image: '/images/fatloss.jpg',
-    includes: ['Metabolic assessment', 'Habit coaching', 'Monthly re-testing'],
+      'Complete your profile in focused sections, each with a clear purpose and time estimate. Progress, XP and achievements make the setup visible, and the plan unlocks only when the essentials are in place.',
+    image: '/images/app/missions-wide.webp',
+    includes: ['7 guided missions', 'XP and achievements', 'Editable answers'],
   },
   {
     id: 'nutrition',
     number: '04',
-    title: 'Nutrition Guidance',
-    tagline: 'Food that works with your life.',
+    title: 'Nutrition Log',
+    tagline: 'Fuel the training you actually do.',
     description:
-      'Practical nutrition built around your preferences, allergies, cooking reality and budget. No banned foods — just a structure that supports training and recovery.',
-    image: '/images/nutrition.jpg',
-    includes: ['In-depth nutrition review', 'Flexible meal framework', 'Fortnightly adjustments'],
+      'Log meals, water and daily targets alongside your training. Nutrition preferences from your profile are kept separate from the workout model, so allergies and dietary choices are not treated as training inputs.',
+    image: '/images/app/nutrition-wide.webp',
+    includes: ['Meal logging', 'Water tracking', 'Macro targets'],
   },
   {
-    id: 'endurance',
+    id: 'progress',
     number: '05',
-    title: 'Endurance Training',
-    tagline: 'Go further, recover faster.',
+    title: 'Progress Tracking',
+    tagline: 'Evidence, not guesswork.',
     description:
-      'Zone-aware conditioning for runners, cyclists and hybrid athletes. We build an aerobic base without sacrificing strength or leaving you flat.',
-    image: '/images/endurance.jpg',
-    includes: ['Zone testing', 'Hybrid programming', 'Race-day planning'],
+      'Workout history, body measurements, nutrition and AI form sessions feed one progress view. Trends show what is changing, while the dashboard keeps the next useful action in front of you.',
+    image: '/images/app/progress-wide.webp',
+    includes: ['Weight and measurements', 'Workout history', 'Form-score trends'],
   },
   {
     id: 'lifestyle',
@@ -113,165 +120,192 @@ export const PROGRAMS: ServiceProgram[] = [
     title: 'Lifestyle & Recovery',
     tagline: 'The other 22 hours matter.',
     description:
-      'Sleep, stress, mobility and recovery habits engineered around a real schedule. The goal is a body that feels good on the days you are not training.',
-    image: '/images/recovery.jpg',
-    includes: ['Sleep & stress audit', 'Mobility routine', 'Recovery protocol'],
+      'Track sleep, steps, stress and recovery habits in the same place as your training. The aim is a repeatable week you can recover from, not a plan that only works on paper.',
+    image: '/images/app/lifestyle-wide.webp',
+    includes: ['Sleep and stress', 'Daily movement', 'Recovery habits'],
   },
 ]
 
-export const TESTIMONIALS: Testimonial[] = [
+export const CAPABILITIES: Testimonial[] = [
   {
     quote:
-      'For the first time, training fits around my week instead of taking it over. The programme is demanding but never random — and my back pain has largely gone.',
-    name: 'Sample Client A',
-    detail: 'Strength programme · 9 months',
-    initials: 'SA',
+      'Your age, body metrics, goal, equipment, training experience and safety category feed a 24-class model that runs entirely in the browser. It selects a training style, then structures the week around your inputs.',
+    name: 'AI workout plan',
+    detail: '24 training styles · browser inference',
+    initials: 'AI',
   },
   {
     quote:
-      'The nutrition coaching changed the way I eat without turning dinner into a spreadsheet. I am stronger, sleeping better and no longer starting over every Monday.',
-    name: 'Sample Client B',
-    detail: 'Fat loss & nutrition · 6 months',
-    initials: 'SB',
+      'Squat, bicep curl and push-up checks use 33 pose landmarks and three trained classifiers. You get rep counts, form scores and cues without sending camera frames to a server.',
+    name: 'On-device form coach',
+    detail: 'MediaPipe + ONNX · camera stays local',
+    initials: 'FC',
   },
   {
     quote:
-      'Every session has a purpose. My squat is up 30 kg, my running is easier, and the check-ins keep me honest when work gets chaotic.',
-    name: 'Sample Client C',
-    detail: 'Hybrid performance · 12 months',
-    initials: 'SC',
+      'Seven profile missions cover body metrics, health, training history, nutrition, lifestyle, goals and mindset. The training-relevant answers shape the plan; every answer can be updated later.',
+    name: 'Guided profile',
+    detail: '7 missions · XP and achievements',
+    initials: 'GP',
   },
   {
     quote:
-      'I was nervous about returning to the gym after years away. The pace was right from day one, and I never felt out of place. That made all the difference.',
-    name: 'Sample Client D',
-    detail: 'Beginner strength · 4 months',
-    initials: 'SD',
+      'Your next workout, nutrition log, recovery check-in, progress trends and recent AI sessions share one account. The dashboard shows what matters next instead of scattering it across five apps.',
+    name: 'One training workspace',
+    detail: 'Web app · mobile responsive',
+    initials: 'TW',
   },
 ]
 
-export const CREDENTIALS: Credential[] = [
+export const TECHNOLOGY: Credential[] = [
   {
-    id: 'sport-science',
-    year: '2016',
-    title: 'BSc Sport Science & Movement',
-    institution: 'University of Lausanne',
+    id: 'browser-inference',
+    year: '01',
+    title: 'Browser-based recommendation',
+    institution: 'ONNX Runtime Web',
     description:
-      'Exercise physiology, biomechanics and strength & conditioning foundations. Sample credential for this demo build.',
+      'The workout model is exported to ONNX and executed on your device. Your profile is not sent to a third-party inference API to generate a plan.',
   },
   {
-    id: 'strength-cert',
-    year: '2018',
-    title: 'Certified Strength Coach',
-    institution: 'Swiss Coaching Federation',
+    id: 'pose-tracking',
+    year: '02',
+    title: 'On-device pose tracking',
+    institution: 'MediaPipe Tasks Vision',
     description:
-      'Advanced programming, load management and movement screening. Sample credential for this demo build.',
+      'The form coach tracks 33 body landmarks from camera frames. Frames are processed in the browser and are not uploaded by the app.',
   },
   {
-    id: 'nutrition-cert',
-    year: '2020',
-    title: 'Sports Nutrition Diploma',
-    institution: 'Institute of Applied Nutrition',
+    id: 'account-security',
+    year: '03',
+    title: 'Account-scoped data',
+    institution: 'Firebase Auth + Firestore',
     description:
-      'Energy availability, body composition and behaviour-led nutrition coaching. Sample credential for this demo build.',
+      'Signed-in profiles and logs are stored under your account with owner-scoped access rules. Demo mode keeps its data in this browser instead.',
   },
   {
-    id: 'rehab-cert',
-    year: '2023',
-    title: 'Return-to-Training Specialist',
-    institution: 'Clinical Movement Academy',
+    id: 'safety-guardrails',
+    year: '04',
+    title: 'Safety guardrails',
+    institution: 'Validation before planning',
     description:
-      'Progressive rehabilitation and return-to-load protocols for common injuries. Sample credential for this demo build.',
+      'Plans are checked against session, volume and exercise constraints. Health answers set a training category; free-text medical notes are never passed to the model.',
   },
 ]
 
-export const PRICING: PricingPlan[] = [
+export const PLATFORM_PLANS: PricingPlan[] = [
   {
-    id: 'starter',
-    name: 'Foundation',
-    price: 'CHF 690',
-    cadence: '/ month',
-    description: 'For a focused start with structure and accountability.',
+    id: 'profile',
+    name: 'Profile',
+    price: '7',
+    cadence: 'guided missions',
+    description: 'Build the context every useful plan depends on.',
     features: [
-      '4 private sessions per month',
-      'Personal training programme',
-      'Monthly progress review',
-      'Studio access during sessions',
-      'Message support (48h)',
+      'Quick Start in about two minutes',
+      'Body, health and training history',
+      'Nutrition, lifestyle, goals and mindset',
+      'Progress saved to your account',
+      'Answers editable at any time',
     ],
   },
   {
-    id: 'signature',
-    name: 'Signature',
-    price: 'CHF 1,190',
-    cadence: '/ month',
-    description: 'Our most complete coaching relationship.',
+    id: 'plan',
+    name: 'AI Plan',
+    price: '24',
+    cadence: 'training styles',
+    description: 'Turn your profile into a structured training week.',
     features: [
-      '8 private sessions per month',
-      'Full assessment & mission review',
-      'Nutrition framework included',
-      'Fortnightly check-in call',
-      'Priority message support',
-      'Progress photo & measurement tracking',
+      'Goal and equipment-aware selection',
+      'Experience and safety-category inputs',
+      'Weekly sets, reps, rest and progression',
+      'Plan validation before it is shown',
+      'Regenerate when your profile changes',
     ],
     highlighted: true,
-    badge: 'Most chosen',
+    badge: 'Core workflow',
   },
   {
-    id: 'performance',
-    name: 'Performance',
-    price: 'CHF 1,890',
-    cadence: '/ month',
-    description: 'High-touch coaching for ambitious goals and busy calendars.',
+    id: 'coach',
+    name: 'Form Coach',
+    price: '3',
+    cadence: 'exercise checks',
+    description: 'Add a live form check to your training week.',
     features: [
-      '12 private sessions per month',
-      'Advanced performance testing',
-      'Nutrition plan & adjustments',
-      'Weekly coach check-in',
-      'Travel & competition programming',
-      'Direct coach line',
+      'Squat, bicep curl and push-up',
+      'Rep counting from joint motion',
+      'Form score and corrective cues',
+      'Camera or uploaded video',
+      'Session summaries saved to progress',
     ],
   },
 ]
 
 export const FAQS: FaqItem[] = [
   {
-    question: 'Is coaching suitable if I am completely new to training?',
+    question: 'Do I need a coach or a gym to use Forge?',
     answer:
-      'Yes. Beginners are the group that benefits most from coached technique and a gradually loaded programme. Your first sessions are spent on assessment and movement quality, not chasing numbers.',
+      'No. Forge is a self-guided training workspace. You choose the equipment you can access during your profile missions — from a full gym to dumbbells, bands or minimal equipment — and the plan is generated around that selection.',
   },
   {
-    question: 'What happens before my first session?',
+    question: 'How does the AI workout plan work?',
     answer:
-      'You complete the Quick Start profile online, then we walk through your training history, health restrictions and goals. Any relevant medical information requires clearance before intense exercise is prescribed.',
+      'Once the seven profile missions are complete, the recommendation model uses your age, weight, height, goal, equipment, experience and safety category to choose from 24 training styles. It then builds a weekly plan with exercises, sets, reps and rest. The model runs in your browser.',
   },
   {
-    question: 'How often should I train each week?',
+    question: 'Does the AI Coach upload my camera feed?',
     answer:
-      'Most clients train two to four times per week. Two well-programmed sessions consistently done will beat five improvised ones. We set the frequency around your schedule and recovery.',
+      'No. Pose tracking and the three form classifiers run in your browser. Camera frames stay on your device; only the session summary you choose to save is added to your workout history. You can also upload a video instead of using a live camera.',
   },
   {
-    question: 'Do I need to follow a strict diet?',
+    question: 'What happens to the information in my missions?',
     answer:
-      'No. Nutrition guidance is built around foods you actually enjoy, your cooking capacity and your budget. The aim is a repeatable structure — not a short-term restriction phase.',
+      'When you are signed in, profile answers and training logs are stored under your account in Firebase. Access rules scope that data to the signed-in owner. If you use demo mode, the data stays in this browser. Free-text injury notes are not sent to the recommendation model.',
   },
   {
-    question: 'Can I train with an injury or medical condition?',
+    question: 'Can I use Forge with an injury or medical condition?',
     answer:
-      'Often yes, with appropriate clearance and modifications. We ask for details in the Health Profile mission and will request medical clearance before loading movements that could be unsafe.',
+      'The Health Profile mission records conditions, injuries and clearance so the plan can use a safer training category. Forge does not diagnose or treat injuries, and it does not replace medical advice. Seek clearance from a qualified clinician before starting intense exercise.',
   },
   {
-    question: 'Where do sessions take place?',
+    question: 'Is Forge a replacement for a doctor or physiotherapist?',
     answer:
-      'In our private studio in central Lausanne, with limited remote coaching available for travel or hybrid clients. Exact address and availability are shared during your intro call.',
+      'No. Forge is a training and tracking tool. It can help you organise exercise and notice form trends, but it cannot provide medical diagnosis, rehabilitation or emergency support. Stop if something hurts and seek professional advice.',
+  },
+  {
+    question: 'Does it work on a phone?',
+    answer:
+      'Yes. The workspace is responsive and works in a modern mobile browser. Camera form checks need camera permission; if you prefer not to grant it, you can upload a recorded video or skip the form coach and use the rest of the workspace.',
   },
 ]
 
 export const GALLERY = [
-  { src: '/images/gallery1.jpg', alt: 'Athlete training with battle ropes in a studio', label: 'Conditioning' },
-  { src: '/images/gallery2.jpg', alt: 'Close-up of dumbbell training in the gym', label: 'Strength' },
-  { src: '/images/training.jpg', alt: 'Athlete performing a pull-up in a gym', label: 'Pull day' },
-  { src: '/images/gallery4.jpg', alt: 'Muscular athlete hanging from a pull-up bar', label: 'Back work' },
-  { src: '/images/woman-strong.jpg', alt: 'Athlete performing a cable exercise', label: 'Coached session' },
-  { src: '/images/gallery6.jpg', alt: 'Barbell squat training in a dark gym', label: 'Squat focus' },
+  {
+    src: '/images/app/overview-tall.webp',
+    alt: 'Forge Athletic dashboard showing profile completion, weekly plan and next workout',
+    label: 'Overview',
+  },
+  {
+    src: '/images/app/missions-tall.webp',
+    alt: 'Forge Athletic missions screen showing the seven guided profile missions',
+    label: 'Missions',
+  },
+  {
+    src: '/images/app/ai-plan-tall.webp',
+    alt: 'Forge Athletic AI Plan screen showing a generated weekly workout plan',
+    label: 'AI Plan',
+  },
+  {
+    src: '/images/app/ai-coach-tall.webp',
+    alt: 'Forge Athletic AI Coach screen with camera form-check controls',
+    label: 'Form Coach',
+  },
+  {
+    src: '/images/app/nutrition-tall.webp',
+    alt: 'Forge Athletic nutrition screen showing meal and water logging',
+    label: 'Nutrition',
+  },
+  {
+    src: '/images/app/progress-tall.webp',
+    alt: 'Forge Athletic progress screen showing weight and measurement trends',
+    label: 'Progress',
+  },
 ]

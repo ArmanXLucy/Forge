@@ -140,7 +140,7 @@ export function GallerySection() {
       <div className="container-forge">
         <div className="flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
           <SectionHeading
-            eyebrow="Inside the studio"
+            eyebrow="Inside the app"
             theme="dark"
             drift={3.2}
             title={
@@ -153,10 +153,10 @@ export function GallerySection() {
           />
           <div className="max-w-sm">
             <p className="text-sm leading-relaxed text-white/50">
-              Real training, real effort. A glimpse of the work that happens between check-ins.
+              Actual screens from the Forge workspace. This is the product you will use — not a stock-photo version of it.
             </p>
             <p className="mt-3 inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.18em] text-white/25">
-              Sample gallery · demo content
+              Real product screens · demo profile
             </p>
           </div>
         </div>

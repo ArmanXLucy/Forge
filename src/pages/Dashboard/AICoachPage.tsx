@@ -680,7 +680,7 @@ export default function AICoachPage() {
             </span>
           </div>
 
-          <div className="relative aspect-video overflow-hidden rounded-xl bg-black">
+          <div className="relative aspect-[4/5] overflow-hidden rounded-xl bg-black sm:aspect-video">
             <video
               ref={videoRef}
               playsInline

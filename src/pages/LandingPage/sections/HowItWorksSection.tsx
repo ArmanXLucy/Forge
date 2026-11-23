@@ -8,26 +8,26 @@ const steps = [
   {
     number: '01',
     icon: UserRoundCheck,
-    title: 'Understand your body',
+    title: 'Build your profile',
     description:
-      'A short Quick Start profile plus a guided assessment of your training history, health constraints, lifestyle and goals. We establish the baseline before writing a single set.',
+      'Start with the Quick Start, then complete seven focused missions covering body metrics, health, training history, nutrition, lifestyle, goals and mindset. Everything stays editable.',
     detail: 'Quick Start · 2 minutes',
   },
   {
     number: '02',
     icon: ClipboardCheck,
-    title: 'Build your personal plan',
+    title: 'Generate your plan',
     description:
-      'Your programme, nutrition framework and recovery plan are written around your schedule and equipment. Every exercise has a reason, a target and a progression path.',
-    detail: 'Missions · one at a time',
+      'The recommendation model reads your goal, equipment, experience and safety category, selects from 24 training styles, and builds a validated week of sets, reps, rest and progression.',
+    detail: 'Profile · 7 missions',
   },
   {
     number: '03',
     icon: LineChart,
-    title: 'Track your progress',
+    title: 'Train with feedback',
     description:
-      'We measure strength, measurements, sleep and consistency — then adjust every few weeks. The dashboard keeps the whole picture visible, even between sessions.',
-    detail: 'Review · every 4–6 weeks',
+      'Log workouts, meals and recovery, then use the browser form coach for squat, curl or push-up checks. Your progress view connects the evidence so the next adjustment is informed.',
+    detail: 'Feedback · every session',
   },
 ]
 
@@ -48,8 +48,8 @@ export function HowItWorksSection() {
             className="max-w-2xl"
           />
           <p className="max-w-sm text-sm leading-relaxed text-charcoal/55">
-            A deliberate onboarding process, built to collect only what matters — progressively,
-            and at your pace.
+            A deliberate setup, built to collect only what matters — progressively, and at
+            your pace.
           </p>
         </div>
 
@@ -93,8 +93,8 @@ export function HowItWorksSection() {
               Start where you are
             </p>
             <p className="mt-2 max-w-xl text-sm leading-relaxed text-white/65">
-              The Quick Start takes about two minutes. Seven deeper missions unlock as you go — so
-              your first session is never delayed by a forty-page questionnaire.
+              The Quick Start takes about two minutes. The seven deeper missions are available in
+              any order, so the profile grows with the time you have.
             </p>
           </div>
           <Link to="/signup" className={buttonClasses('white', 'default', 'shrink-0')}>

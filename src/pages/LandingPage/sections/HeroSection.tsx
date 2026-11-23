@@ -1,17 +1,10 @@
 import { useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { motion, useReducedMotion, useScroll, useTransform } from 'framer-motion'
-import { ArrowDown, ArrowUpRight, Play, ShieldCheck, Star } from 'lucide-react'
+import { ArrowDown, ArrowUpRight, ShieldCheck, Sparkles } from 'lucide-react'
 import { buttonClasses } from '../../../components/ui/Button'
-import { DISCIPLINES } from '../../../data/landing'
+import { DISCIPLINES, HERO_STATS } from '../../../data/landing'
 import { RollingText } from '../../../components/motion/RollingText'
-
-const stats = [
-  { value: '12+', label: 'Years coaching' },
-  { value: '600+', label: 'Sessions / year' },
-  { value: '94%', label: 'Client retention' },
-  { value: '1:1', label: 'Private studio' },
-]
 
 const heroContainer = {
   hidden: {},
@@ -58,7 +51,7 @@ export function HeroSection({ introDone = true }: { introDone?: boolean }) {
           >
             <motion.p variants={reduceMotion ? undefined : rise} className="eyebrow-light">
               <span className="h-1.5 w-1.5 rounded-full bg-orange-500" />
-              Personalized fitness coaching
+              Personalized training · on-device AI
             </motion.p>
 
             <motion.h1 variants={reduceMotion ? undefined : titleDrop} className="display-hero mt-5 text-white">
@@ -71,9 +64,9 @@ export function HeroSection({ introDone = true }: { introDone?: boolean }) {
 
             <motion.div variants={reduceMotion ? undefined : rise} className="mt-7 max-w-xl">
               <p className="text-[15px] leading-relaxed text-white/60 sm:text-base">
-                Your fitness journey deserves more than a generic workout plan. Build a routine
-                around your body, lifestyle, goals and progress — with a coach beside you the whole
-                way.
+                Forge turns your profile, goals, equipment and training history into a
+                structured weekly plan — then checks your form in the browser as you train. No
+                generic template, no wearable, no external AI service.
               </p>
               <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
                 <Link to="/signup" className={buttonClasses('primary', 'default', 'group group/roll w-full sm:w-auto')}>
@@ -81,24 +74,20 @@ export function HeroSection({ introDone = true }: { introDone?: boolean }) {
                   <ArrowUpRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
                 </Link>
                 <a href="#programs" className={buttonClasses('outline-light', 'default', 'w-full sm:w-auto')}>
-                  Explore programs
+                  Explore the platform
                   <ArrowDown className="h-4 w-4" />
                 </a>
               </div>
               <div className="mt-7 flex flex-wrap items-center gap-x-6 gap-y-3">
                 <div className="flex items-center gap-2">
-                  <span className="flex text-orange-500" aria-hidden="true">
-                    {Array.from({ length: 5 }).map((_, index) => (
-                      <Star key={index} className="h-3.5 w-3.5 fill-current" />
-                    ))}
-                  </span>
+                  <Sparkles className="h-3.5 w-3.5 text-orange-500" aria-hidden="true" />
                   <span className="text-[11px] uppercase tracking-[0.14em] text-white/45">
-                    Sample reviews · 4.9 / 5
+                    24 plan templates · 3 form checks
                   </span>
                 </div>
                 <span className="hidden h-4 w-px bg-white/15 sm:block" />
                 <span className="inline-flex items-center gap-1.5 text-[11px] uppercase tracking-[0.14em] text-white/45">
-                  <ShieldCheck className="h-3.5 w-3.5 text-orange-500" /> Certified coaching
+                  <ShieldCheck className="h-3.5 w-3.5 text-orange-500" /> On-device AI
                 </span>
               </div>
             </motion.div>
@@ -117,14 +106,14 @@ export function HeroSection({ introDone = true }: { introDone?: boolean }) {
                 transition={{ duration: 0.55, delay: 0.62 }}
                 className="absolute -left-3 top-8 z-20 hidden rounded-full border border-white/15 bg-charcoal/80 px-3 py-1.5 text-[9px] font-bold uppercase tracking-[0.2em] text-white/70 backdrop-blur sm:block lg:-left-6"
               >
-                Lausanne · CH
+                Web app · Browser AI
               </motion.div>
               <div className="relative overflow-hidden rounded-[24px] border border-white/10">
                 <motion.img
-                  src="/images/hero-athlete.jpg"
-                  alt="Athlete preparing for a coached strength session in the Forge studio"
-                  width={1400}
-                  height={2099}
+                  src="/images/app/overview-tall.webp"
+                  alt="Forge Athletic dashboard showing profile completion, the weekly plan and the next workout"
+                  width={1200}
+                  height={1500}
                   initial={reduceMotion ? false : { clipPath: 'inset(0% 0% 100% 0%)', scale: 1.06 }}
                   animate={
                     play
@@ -139,18 +128,18 @@ export function HeroSection({ introDone = true }: { introDone?: boolean }) {
                   <div className="flex items-end justify-between gap-4">
                     <div>
                       <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-orange-400">
-                        The method
+                        The workspace
                       </p>
                       <p className="mt-1 max-w-[220px] text-sm font-medium leading-snug text-white/90">
-                        Strength built on assessment, not guesswork.
+                        Your whole training week in one clear view.
                       </p>
                     </div>
                     <a
                       href="#studio"
-                      aria-label="Explore the studio"
+                      aria-label="Explore the Forge workspace"
                       className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-orange-500 text-white transition-transform hover:scale-105"
                     >
-                      <Play className="h-4 w-4 fill-current" />
+                      <ArrowUpRight className="h-4 w-4" />
                     </a>
                   </div>
                 </div>
@@ -163,10 +152,10 @@ export function HeroSection({ introDone = true }: { introDone?: boolean }) {
                 className="absolute -left-4 bottom-16 z-20 hidden w-[170px] rounded-2xl border border-white/10 bg-ivory p-4 text-charcoal shadow-lift sm:block lg:-left-8"
               >
                 <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-charcoal/45">
-                  Weekly training
+                  Weekly structure
                 </p>
-                <p className="mt-1.5 font-display text-3xl leading-none">3–5</p>
-                <p className="mt-1 text-[11px] text-charcoal/55">sessions, built around real life</p>
+                <p className="mt-1.5 font-display text-3xl leading-none">7</p>
+                <p className="mt-1 text-[11px] text-charcoal/55">day plan, with rest built in</p>
                 <div className="mt-3 flex gap-1" aria-hidden="true">
                   {[65, 90, 45, 100, 72, 30, 55].map((height, index) => (
                     <span
@@ -182,7 +171,7 @@ export function HeroSection({ introDone = true }: { introDone?: boolean }) {
         </div>
 
         <div className="relative z-10 grid grid-cols-2 gap-y-6 border-t border-white/10 py-6 sm:grid-cols-4 sm:gap-4">
-          {stats.map((stat, index) => (
+          {HERO_STATS.map((stat, index) => (
             <motion.div
               key={stat.label}
               initial={reduceMotion ? false : { opacity: 0, y: 18 }}
@@ -207,7 +196,7 @@ export function HeroSection({ introDone = true }: { introDone?: boolean }) {
             Forge Athletic Co.
           </p>
           <p className="hidden text-[9px] uppercase tracking-[0.25em] text-white/25 sm:block">
-            Sample metrics — demo content
+            Profile-led · Browser AI
           </p>
           <a href="#studio" className="text-[9px] uppercase tracking-[0.2em] text-white/40 hover:text-white">
             Scroll ↓

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import { AnimatePresence, motion } from 'framer-motion'
 import { Minus, Plus } from 'lucide-react'
 import { SectionHeading } from '../../../components/ui/SectionHeading'
@@ -21,20 +22,20 @@ export function FaqSection() {
                 <span className="text-charcoal/30">begin.</span>
               </>
             }
-            description="Straight answers to the things people usually ask before their first session."
+            description="Straight answers about how Forge works, what it stores and what the AI can and cannot do."
           />
           <div className="mt-7 hidden rounded-2xl border border-charcoal/10 bg-white p-5 lg:block">
-            <p className="text-[12px] font-semibold text-charcoal">Still unsure?</p>
+            <p className="text-[12px] font-semibold text-charcoal">Not sure where to start?</p>
             <p className="mt-1.5 text-[12px] leading-relaxed text-charcoal/50">
-              A complimentary intro call is the fastest way to find out whether Forge is the right
-              fit.
+              Create a profile and begin with the two-minute Quick Start. The seven missions can be
+              completed in any order.
             </p>
-            <a
-              href="mailto:hello@forge-athletic.ch"
+            <Link
+              to="/signup"
               className="mt-3 inline-block text-[11px] font-bold uppercase tracking-[0.14em] text-orange-600 hover:text-orange-700"
             >
-              hello@forge-athletic.ch →
-            </a>
+              Create your profile →
+            </Link>
           </div>
         </div>
 

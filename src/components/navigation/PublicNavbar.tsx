@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
-import { ArrowUpRight, Instagram, Linkedin, Mail, Menu, Phone, X, Youtube } from 'lucide-react'
+import { ArrowUpRight, Brain, Menu, ScanFace, X } from 'lucide-react'
 import { Logo } from '../../components/ui/Logo'
 import { buttonClasses } from '../../components/ui/Button'
-import { BRAND, NAV_ITEMS } from '../../lib/constants'
+import { NAV_ITEMS } from '../../lib/constants'
 import { cn } from '../../lib/utils'
 import { RollingText } from '../motion/RollingText'
 
@@ -104,17 +104,17 @@ export function PublicNavbar({ forceSolid = false }: { forceSolid?: boolean } = 
           <div className="flex items-center gap-5">
             <span className="inline-flex items-center gap-1.5">
               <span className="h-1.5 w-1.5 animate-pulse-dot rounded-full bg-orange-500" />
-              Private coaching studio · Lausanne
+              Personal fitness workspace · web app
             </span>
             <span className="hidden text-white/30 xl:inline">|</span>
-            <span className="hidden text-white/50 xl:inline">{BRAND.hours}</span>
+            <span className="hidden text-white/50 xl:inline">On-device AI · no install</span>
           </div>
           <div className="flex items-center gap-5">
-            <a href={`tel:${BRAND.phone.replace(/\s/g, '')}`} className="inline-flex items-center gap-1.5 hover:text-white">
-              <Phone className="h-3 w-3" aria-hidden="true" /> {BRAND.phone}
+            <a href="/#studio" className="inline-flex items-center gap-1.5 hover:text-white">
+              <Brain className="h-3 w-3" aria-hidden="true" /> AI Plan
             </a>
-            <a href={`mailto:${BRAND.email}`} className="inline-flex items-center gap-1.5 hover:text-white">
-              <Mail className="h-3 w-3" aria-hidden="true" /> {BRAND.email}
+            <a href="/#studio" className="inline-flex items-center gap-1.5 hover:text-white">
+              <ScanFace className="h-3 w-3" aria-hidden="true" /> Form Coach
             </a>
           </div>
         </div>
@@ -239,28 +239,15 @@ export function PublicNavbar({ forceSolid = false }: { forceSolid?: boolean } = 
               </div>
               <div className="mt-auto pt-10">
                 <div className="space-y-2 text-sm text-white/55">
-                  <a href={`tel:${BRAND.phone.replace(/\s/g, '')}`} className="flex items-center gap-2">
-                    <Phone className="h-4 w-4 text-orange-500" /> {BRAND.phone}
+                  <a href="/#studio" className="flex items-center gap-2">
+                    <Brain className="h-4 w-4 text-orange-500" /> AI workout plan
                   </a>
-                  <a href={`mailto:${BRAND.email}`} className="flex items-center gap-2">
-                    <Mail className="h-4 w-4 text-orange-500" /> {BRAND.email}
+                  <a href="/#studio" className="flex items-center gap-2">
+                    <ScanFace className="h-4 w-4 text-orange-500" /> Camera form coach
                   </a>
-                </div>
-                <div className="mt-5 flex items-center gap-3">
-                  {[Instagram, Youtube, Linkedin].map((Icon, i) => (
-                    <a
-                      key={i}
-                      href="#"
-                      onClick={(e) => e.preventDefault()}
-                      aria-label="Social profile placeholder"
-                      className="flex h-11 w-11 items-center justify-center rounded-full border border-white/15 text-white/60"
-                    >
-                      <Icon className="h-4 w-4" />
-                    </a>
-                  ))}
                 </div>
                 <p className="mt-6 text-[10px] uppercase tracking-[0.2em] text-white/30">
-                  {BRAND.address}
+                  Browser-based · no install required
                 </p>
               </div>
             </div>

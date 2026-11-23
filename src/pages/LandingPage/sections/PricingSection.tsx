@@ -3,12 +3,12 @@ import { motion } from 'framer-motion'
 import { ArrowUpRight, Check, ShieldCheck } from 'lucide-react'
 import { SectionHeading } from '../../../components/ui/SectionHeading'
 import { buttonClasses } from '../../../components/ui/Button'
-import { PRICING } from '../../../data/landing'
+import { PLATFORM_PLANS } from '../../../data/landing'
 import { cn } from '../../../lib/utils'
 
 export function PricingSection() {
   return (
-    <section id="pricing" className="relative overflow-hidden bg-charcoal py-16 text-white sm:py-20 lg:py-28">
+    <section id="included" className="relative overflow-hidden bg-charcoal py-16 text-white sm:py-20 lg:py-28">
       <div
         aria-hidden="true"
         className="pointer-events-none absolute right-0 top-0 h-[420px] w-[420px] rounded-full bg-orange-500/[0.06] blur-3xl"
@@ -16,30 +16,30 @@ export function PricingSection() {
       <div className="container-forge relative z-10">
         <div className="flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
           <SectionHeading
-            eyebrow="Coaching plans"
+            eyebrow="Core experience"
             theme="dark"
             drift={2.2}
             title={
               <>
-                Invest in
+                Everything in
                 <br />
-                <span className="text-white/35">the long game.</span>
+                <span className="text-white/35">one workspace.</span>
               </>
             }
           />
           <div className="max-w-sm">
             <p className="text-sm leading-relaxed text-white/50">
-              Transparent monthly coaching. No lock-in beyond the first month, no hidden joining
-              fees. Sample pricing for this demo build.
+              No invented plans or prices. These are the core capabilities built into Forge, connected
+              through the same profile and account.
             </p>
             <p className="mt-3 inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.16em] text-orange-400">
-              <ShieldCheck className="h-3.5 w-3.5" /> Complimentary intro call
+              <ShieldCheck className="h-3.5 w-3.5" /> Profile-led from day one
             </p>
           </div>
         </div>
 
         <div className="mt-11 grid gap-4 lg:grid-cols-3 lg:gap-5">
-          {PRICING.map((plan, index) => (
+          {PLATFORM_PLANS.map((plan, index) => (
             <motion.article
               key={plan.id}
               initial={{ opacity: 0, y: 36, scale: 0.985 }}
@@ -110,7 +110,7 @@ export function PricingSection() {
                     : buttonClasses('outline-light', 'default', 'w-full'),
                 )}
               >
-                Choose {plan.name}
+                Start with {plan.name}
                 <ArrowUpRight className="h-4 w-4" />
               </Link>
             </motion.article>
@@ -119,10 +119,9 @@ export function PricingSection() {
 
         <div className="mt-7 flex flex-col justify-between gap-3 border-t border-white/10 pt-6 text-[11px] text-white/35 sm:flex-row">
           <p>
-            Nutrition-only and duo coaching available on request. Pricing shown is placeholders for
-            the frontend demo.
+            Profile, planning and form feedback stay connected in one account.
           </p>
-          <p>CHF · Swiss francs · no commitment beyond month one</p>
+          <p>No subscription pricing shown · product demo</p>
         </div>
       </div>
     </section>

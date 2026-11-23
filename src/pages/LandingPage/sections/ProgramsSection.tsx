@@ -18,7 +18,7 @@ export function ProgramsSection() {
           <div className="lg:col-span-5">
             <div className="lg:sticky lg:top-28">
               <SectionHeading
-                eyebrow="Coaching programs"
+                eyebrow="Platform features"
                 drift={1.8}
                 title={
                   <>
@@ -27,7 +27,7 @@ export function ProgramsSection() {
                     <span className="text-charcoal/30">intention.</span>
                   </>
                 }
-                description="Six ways to work together. Every programme begins with an assessment and ends with a measurable result — never a template."
+                description="Six connected tools. Your profile feeds the plan, the plan feeds your training, and every session adds context for the next adjustment."
               />
               <div className="mt-8 hidden overflow-hidden rounded-2xl lg:block">
                 <AnimatePresence mode="wait">
@@ -62,7 +62,7 @@ export function ProgramsSection() {
                 </div>
               </div>
               <Link to="/signup" className={buttonClasses('dark', 'default', 'mt-8 hidden lg:inline-flex')}>
-                Find your programme <ArrowRight className="h-4 w-4" />
+                Create your profile <ArrowRight className="h-4 w-4" />
               </Link>
             </div>
           </div>
@@ -162,10 +162,10 @@ export function ProgramsSection() {
             </div>
             <div className="mt-8 flex flex-col gap-3 sm:flex-row lg:hidden">
               <Link to="/signup" className={buttonClasses('dark', 'default', 'w-full sm:w-auto')}>
-                Find your programme <ArrowRight className="h-4 w-4" />
+                Create your profile <ArrowRight className="h-4 w-4" />
               </Link>
-              <a href="#pricing" className={buttonClasses('outline', 'default', 'w-full sm:w-auto')}>
-                View pricing
+              <a href="#included" className={buttonClasses('outline', 'default', 'w-full sm:w-auto')}>
+                See core features
               </a>
             </div>
           </div>

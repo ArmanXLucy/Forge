@@ -6,10 +6,16 @@ import { STUDIO_TABS } from '../../../data/landing'
 import { cn } from '../../../lib/utils'
 
 const trustItems = [
-  { icon: ShieldCheck, title: 'Certified & insured', text: 'Sport science foundation, professional liability cover.' },
-  { icon: Dumbbell, title: 'Private training floor', text: 'Full strength and cardio setup, reserved per session.' },
-  { icon: Timer, title: 'Assessment first', text: 'No programme is written before we understand your baseline.' },
-  { icon: Sparkles, title: 'Progress, measured', text: 'Regular re-testing and programme adjustments every 4–6 weeks.' },
+  { icon: ShieldCheck, title: 'On-device AI', text: 'Recommendation and form models run in your browser.' },
+  { icon: Dumbbell, title: 'Profile-led plans', text: 'Built from your goals, equipment, history and safety profile.' },
+  { icon: Timer, title: 'Guided onboarding', text: 'Seven focused missions replace one giant questionnaire.' },
+  { icon: Sparkles, title: 'Progress, measured', text: 'Training, nutrition, recovery and form scores in one view.' },
+]
+
+const platformStats = [
+  { value: '07', label: 'Profile missions', accent: true },
+  { value: '24', label: 'Plan templates', accent: false },
+  { value: '03', label: 'Form checks', accent: false },
 ]
 
 export function StudioSection() {
@@ -22,31 +28,27 @@ export function StudioSection() {
         <div className="grid gap-10 lg:grid-cols-12 lg:gap-14">
           <div className="lg:col-span-5">
             <SectionHeading
-              eyebrow="The studio"
+              eyebrow="Inside Forge"
               theme="dark"
               drift={2.2}
               title={
                 <>
-                  A private floor.
+                  One workspace.
                   <br />
                   <span className="text-white/35">A singular focus.</span>
                 </>
               }
-              description="You train behind a closed door, in a studio equipped for serious strength work and calm recovery. No audience, no waiting, no noise."
+              description="Your profile, plan and progress stay connected. Train from a structured week, check your form when you need a second opinion, and keep the context that makes the next adjustment useful."
             />
             <div className="mt-8 flex flex-wrap gap-x-8 gap-y-4 border-t border-white/10 pt-7">
-              <div>
-                <p className="font-display text-3xl text-orange-500">140m²</p>
-                <p className="mt-1 text-[10px] uppercase tracking-[0.18em] text-white/35">Training floor</p>
-              </div>
-              <div>
-                <p className="font-display text-3xl text-white">1:1</p>
-                <p className="mt-1 text-[10px] uppercase tracking-[0.18em] text-white/35">Coaching ratio</p>
-              </div>
-              <div>
-                <p className="font-display text-3xl text-white">06–21</p>
-                <p className="mt-1 text-[10px] uppercase tracking-[0.18em] text-white/35">Opening hours</p>
-              </div>
+              {platformStats.map((stat) => (
+                <div key={stat.label}>
+                  <p className={cn('font-display text-3xl', stat.accent ? 'text-orange-500' : 'text-white')}>
+                    {stat.value}
+                  </p>
+                  <p className="mt-1 text-[10px] uppercase tracking-[0.18em] text-white/35">{stat.label}</p>
+                </div>
+              ))}
             </div>
           </div>
 
@@ -63,12 +65,12 @@ export function StudioSection() {
                   <motion.img
                     key={active.id}
                     src={active.image}
-                    alt={active.title}
+                    alt={`${active.title} — Forge Athletic application screen`}
                     initial={{ opacity: 0, scale: 1.06, clipPath: 'inset(0% 0% 100% 0%)' }}
                     animate={{ opacity: 1, scale: 1, clipPath: 'inset(0% 0% 0% 0%)' }}
                     exit={{ opacity: 0, transition: { duration: 0.25 } }}
                     transition={{ duration: 0.75, ease: [0.16, 1, 0.3, 1] }}
-                    className="absolute inset-0 h-full w-full object-cover"
+                    className="absolute inset-0 h-full w-full object-cover object-top"
                     loading="lazy"
                   />
                 </AnimatePresence>
