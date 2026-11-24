@@ -12,6 +12,7 @@ import {
   isPlanOutdated,
   RecommendationError,
 } from '../features/workout-recommendation/lib/recommendationService'
+import { trackAIEvent } from '../services/monitoring/aiMonitoring'
 
 interface RecommendationState {
   uid: string | null
@@ -88,6 +89,7 @@ export const useRecommendationStore = create<RecommendationState>((set, get) => 
       throw new RecommendationError('not-ready', 'A plan is already being generated.')
     }
     set({ generating: true, error: null, errorCode: null })
+    const startedAt = performance.now()
     try {
       const previous = get().plans
       const plan = await createRecommendation({ userId: uid, profile, answers, progress, previousPlans: previous })
@@ -101,12 +103,34 @@ export const useRecommendationStore = create<RecommendationState>((set, get) => 
           await deactivateRecommendations(uid, plan.recommendationId)
           await persistRecommendation(uid, plan)
         } catch (error) {
+          trackAIEvent({
+            feature: 'workout-recommendation',
+            eventType: 'recommendation.save_failed',
+            status: 'error',
+            modelId: 'workout_recommendation',
+            modelVersion: plan.modelVersion,
+            category: plan.predictedPlanCategory,
+            durationMs: Math.round(performance.now() - startedAt),
+            errorCategory: 'persistence',
+            errorCode: 'persistence-failed',
+            message: error instanceof Error ? error.message : 'Recommendation persistence failed',
+          })
           throw new RecommendationError(
             'persistence-failed',
             'The plan was generated but could not be saved to your account. Try again.',
             [error instanceof Error ? error.message : ''],
           )
         }
+        trackAIEvent({
+          feature: 'workout-recommendation',
+          eventType: 'recommendation.saved',
+          status: 'ok',
+          modelId: 'workout_recommendation',
+          modelVersion: plan.modelVersion,
+          category: plan.predictedPlanCategory,
+          confidence: plan.confidence,
+          durationMs: Math.round(performance.now() - startedAt),
+        })
       }
 
       localRecommendationRepository.saveRecommendations(uid, next)

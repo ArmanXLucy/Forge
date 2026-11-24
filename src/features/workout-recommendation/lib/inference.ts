@@ -1,5 +1,6 @@
 import * as ort from 'onnxruntime-web/wasm'
 import type { ModelInput } from '../types'
+import { trackAIEvent } from '../../../services/monitoring/aiMonitoring'
 
 const MODEL_URL = '/models/workout_recommendation.onnx'
 const SCHEMA_URL = '/models/feature_schema.json'
@@ -58,6 +59,15 @@ export function loadFeatureSchema(): Promise<FeatureSchema> {
       })
       .catch((error) => {
         schemaPromise = null
+        trackAIEvent({
+          feature: 'workout-recommendation',
+          eventType: 'model.load_failed',
+          status: 'error',
+          modelId: 'feature_schema',
+          errorCategory: 'schema_load',
+          errorCode: 'schema-unavailable',
+          message: error instanceof Error ? error.message : 'Feature schema unavailable',
+        })
         throw new InferenceError('schema-unavailable', 'Could not load the model feature schema.', {
           cause: error,
         })
@@ -74,6 +84,13 @@ async function getSession() {
     )
   }
   if (!sessionPromise) {
+    const startedAt = performance.now()
+    trackAIEvent({
+      feature: 'workout-recommendation',
+      eventType: 'model.load_started',
+      status: 'info',
+      modelId: 'workout_recommendation',
+    })
     sessionPromise = (async () => {
       const response = await fetch(MODEL_URL)
       if (!response.ok) throw new Error(`HTTP ${response.status}`)
@@ -82,14 +99,35 @@ async function getSession() {
         executionProviders: ['wasm'],
         graphOptimizationLevel: 'all',
       })
-    })().catch((error) => {
-      sessionPromise = null
-      throw new InferenceError(
-        'model-unavailable',
-        'The workout model could not be loaded in this browser. Check WebAssembly support, your connection, and that the ONNX artifact is deployed.',
-        { cause: error },
-      )
-    })
+    })()
+      .then((session) => {
+        trackAIEvent({
+          feature: 'workout-recommendation',
+          eventType: 'model.load_succeeded',
+          status: 'ok',
+          modelId: 'workout_recommendation',
+          durationMs: Math.round(performance.now() - startedAt),
+        })
+        return session
+      })
+      .catch((error) => {
+        sessionPromise = null
+        trackAIEvent({
+          feature: 'workout-recommendation',
+          eventType: 'model.load_failed',
+          status: 'error',
+          modelId: 'workout_recommendation',
+          durationMs: Math.round(performance.now() - startedAt),
+          errorCategory: 'model_load',
+          errorCode: 'model-unavailable',
+          message: error instanceof Error ? error.message : 'Model load failed',
+        })
+        throw new InferenceError(
+          'model-unavailable',
+          'The workout model could not be loaded in this browser. Check WebAssembly support, your connection, and that the ONNX artifact is deployed.',
+          { cause: error },
+        )
+      })
   }
   return sessionPromise
 }
@@ -118,9 +156,32 @@ function validate(modelInput: ModelInput, schema: FeatureSchema) {
   }
 }
 
-export async function predictPlanCategory(modelInput: ModelInput): Promise<PredictionResult> {
+export interface PredictionOptions {
+  sessionRef?: string
+}
+
+export async function predictPlanCategory(
+  modelInput: ModelInput,
+  options: PredictionOptions = {},
+): Promise<PredictionResult> {
+  const sessionRef = options.sessionRef
   const [session, schema] = await Promise.all([getSession(), loadFeatureSchema()])
-  validate(modelInput, schema)
+  try {
+    validate(modelInput, schema)
+  } catch (error) {
+    trackAIEvent({
+      feature: 'workout-recommendation',
+      eventType: 'validation.failed',
+      status: 'error',
+      modelId: 'workout_recommendation',
+      modelVersion: schema.model_version,
+      sessionRef,
+      errorCategory: 'validation',
+      errorCode: error instanceof InferenceError ? error.code : 'invalid-input',
+      message: error instanceof Error ? error.message : 'Model input validation failed',
+    })
+    throw error
+  }
 
   const bmi = modelInput.Weight_kg / (modelInput.Height_cm / 100) ** 2
   const feed: Record<string, ort.Tensor> = {}
@@ -137,6 +198,15 @@ export async function predictPlanCategory(modelInput: ModelInput): Promise<Predi
     const value = String((modelInput as unknown as Record<string, unknown>)[feature] ?? '')
     feed[feature] = new ort.Tensor('string', [value], [1, 1])
   }
+
+  trackAIEvent({
+    feature: 'workout-recommendation',
+    eventType: 'inference.started',
+    status: 'info',
+    modelId: 'workout_recommendation',
+    modelVersion: schema.model_version,
+    sessionRef,
+  })
 
   try {
     const started = performance.now()
@@ -170,6 +240,17 @@ export async function predictPlanCategory(modelInput: ModelInput): Promise<Predi
     if (!label) throw new Error('Model returned an unknown class label')
 
     const confidence = probabilities.find((entry) => entry.label === label)?.probability ?? 0
+    trackAIEvent({
+      feature: 'workout-recommendation',
+      eventType: 'inference.succeeded',
+      status: 'ok',
+      modelId: 'workout_recommendation',
+      modelVersion: schema.model_version,
+      sessionRef,
+      category: label,
+      confidence,
+      durationMs: Math.round(inferenceMs),
+    })
     return {
       label,
       confidence,
@@ -179,6 +260,17 @@ export async function predictPlanCategory(modelInput: ModelInput): Promise<Predi
     }
   } catch (error) {
     if (error instanceof InferenceError) throw error
+    trackAIEvent({
+      feature: 'workout-recommendation',
+      eventType: 'inference.failed',
+      status: 'error',
+      modelId: 'workout_recommendation',
+      modelVersion: schema.model_version,
+      sessionRef,
+      errorCategory: 'inference',
+      errorCode: 'inference-failed',
+      message: error instanceof Error ? error.message : 'ONNX inference failed',
+    })
     throw new InferenceError('inference-failed', 'ONNX inference failed.', { cause: error })
   }
 }

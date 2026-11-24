@@ -45,6 +45,30 @@ function missionAnswerDoc(missionId: string, userId: string) {
   }
 }
 
+function monitoringEventDoc(
+  eventId: string,
+  userId: string,
+  overrides: Record<string, unknown> = {},
+) {
+  return {
+    schemaVersion: 1,
+    eventId,
+    userId,
+    appVersion: '1.0.0',
+    feature: 'workout-recommendation',
+    eventType: 'recommendation.generated',
+    status: 'ok',
+    createdAt: Timestamp.now(),
+    sessionRef: 'rec_rules_test',
+    modelId: 'workout_recommendation',
+    modelVersion: '1.0.0',
+    category: 'Bodyweight Circuit',
+    confidence: 0.91,
+    durationMs: 42,
+    ...overrides,
+  }
+}
+
 function recommendationDoc(recommendationId: string, userId: string) {
   return {
     recommendationId,
@@ -159,6 +183,21 @@ async function seed() {
       }),
       setDoc(doc(db, 'users', 'suspended', 'mission_answers', 'health-profile'), missionAnswerDoc('health-profile', 'suspended')),
       setDoc(doc(db, 'users', 'suspended', 'workout_recommendations', 'rec1'), recommendationDoc('rec1', 'suspended')),
+      setDoc(doc(db, 'ai_monitoring_events', 'evtAlice'), monitoringEventDoc('evtAlice', 'alice')),
+      setDoc(doc(db, 'ai_monitoring_events', 'evtBob'), monitoringEventDoc('evtBob', 'bob')),
+      setDoc(
+        doc(db, 'ai_monitoring_events', 'evtCoachError'),
+        monitoringEventDoc('evtCoachError', 'alice', {
+          feature: 'ai-coach',
+          eventType: 'inference.failed',
+          status: 'error',
+          errorCategory: 'inference',
+          errorCode: 'score-failed',
+          message: 'The form model could not score this window.',
+          exercise: 'squat',
+          modelId: 'form_classifier',
+        }),
+      ),
       setDoc(doc(db, 'supportTickets', 'aliceTicket'), {
         ticketId: 'FRG-ALICE',
         userId: 'alice',
@@ -749,6 +788,175 @@ suite('Firestore security rules', () => {
     it('denies inactive admins support access', async () => {
       const db = testEnv.authenticatedContext('inactive').firestore()
       await assertFails(getDocs(collection(db, 'supportTickets')))
+    })
+  })
+
+  describe('AI monitoring events', () => {
+    it('lets a member create a schema-valid event for themselves', async () => {
+      const db = testEnv.authenticatedContext('alice').firestore()
+      await assertSucceeds(
+        setDoc(
+          doc(db, 'ai_monitoring_events', 'evtNew'),
+          monitoringEventDoc('evtNew', 'alice', { createdAt: serverTimestamp() }),
+        ),
+      )
+    })
+
+    it('lets a member create a failure event with a category and code', async () => {
+      const db = testEnv.authenticatedContext('alice').firestore()
+      await assertSucceeds(
+        setDoc(
+          doc(db, 'ai_monitoring_events', 'evtFailure'),
+          monitoringEventDoc('evtFailure', 'alice', {
+            feature: 'ai-coach',
+            eventType: 'coach.session.failed',
+            status: 'error',
+            errorCategory: 'camera',
+            errorCode: 'camera-error',
+            message: 'Camera permission was denied.',
+            createdAt: serverTimestamp(),
+          }),
+        ),
+      )
+    })
+
+    it('denies creating an event on behalf of another member', async () => {
+      const db = testEnv.authenticatedContext('alice').firestore()
+      await assertFails(
+        setDoc(
+          doc(db, 'ai_monitoring_events', 'evtForgedOwner'),
+          monitoringEventDoc('evtForgedOwner', 'bob', { createdAt: serverTimestamp() }),
+        ),
+      )
+    })
+
+    it('denies a suspended member writing monitoring events', async () => {
+      const db = testEnv.authenticatedContext('suspended').firestore()
+      await assertFails(
+        setDoc(
+          doc(db, 'ai_monitoring_events', 'evtSuspended'),
+          monitoringEventDoc('evtSuspended', 'suspended', { createdAt: serverTimestamp() }),
+        ),
+      )
+    })
+
+    it('denies a mismatched eventId, unknown fields and out-of-range values', async () => {
+      const db = testEnv.authenticatedContext('alice').firestore()
+      await assertFails(
+        setDoc(
+          doc(db, 'ai_monitoring_events', 'evtMismatch'),
+          monitoringEventDoc('evtAlice', 'alice', { createdAt: serverTimestamp() }),
+        ),
+      )
+      await assertFails(
+        setDoc(
+          doc(db, 'ai_monitoring_events', 'evtExtra'),
+          monitoringEventDoc('evtExtra', 'alice', {
+            createdAt: serverTimestamp(),
+            answers: { goal: 'weight loss' },
+          }),
+        ),
+      )
+      await assertFails(
+        setDoc(
+          doc(db, 'ai_monitoring_events', 'evtConfidence'),
+          monitoringEventDoc('evtConfidence', 'alice', {
+            createdAt: serverTimestamp(),
+            confidence: 1.5,
+          }),
+        ),
+      )
+      await assertFails(
+        setDoc(
+          doc(db, 'ai_monitoring_events', 'evtVersion'),
+          monitoringEventDoc('evtVersion', 'alice', {
+            createdAt: serverTimestamp(),
+            appVersion: 'x'.repeat(33),
+          }),
+        ),
+      )
+      await assertFails(
+        setDoc(
+          doc(db, 'ai_monitoring_events', 'evtFeature'),
+          monitoringEventDoc('evtFeature', 'alice', {
+            createdAt: serverTimestamp(),
+            feature: 'nutrition-coach',
+          }),
+        ),
+      )
+    })
+
+    it('requires a server timestamp and error metadata', async () => {
+      const db = testEnv.authenticatedContext('alice').firestore()
+      await assertFails(
+        setDoc(
+          doc(db, 'ai_monitoring_events', 'evtClientClock'),
+          monitoringEventDoc('evtClientClock', 'alice', { createdAt: Timestamp.fromMillis(1) }),
+        ),
+      )
+      await assertFails(
+        setDoc(
+          doc(db, 'ai_monitoring_events', 'evtNoCategory'),
+          monitoringEventDoc('evtNoCategory', 'alice', {
+            createdAt: serverTimestamp(),
+            status: 'error',
+          }),
+        ),
+      )
+    })
+
+    it('lets owners read their event but not another member event', async () => {
+      const aliceDb = testEnv.authenticatedContext('alice').firestore()
+      await assertSucceeds(getDoc(doc(aliceDb, 'ai_monitoring_events', 'evtAlice')))
+      await assertFails(getDoc(doc(aliceDb, 'ai_monitoring_events', 'evtBob')))
+    })
+
+    it('lets members list only their own events', async () => {
+      const aliceDb = testEnv.authenticatedContext('alice').firestore()
+      await assertSucceeds(
+        getDocs(query(collection(aliceDb, 'ai_monitoring_events'), where('userId', '==', 'alice'))),
+      )
+      await assertFails(getDocs(collection(aliceDb, 'ai_monitoring_events')))
+    })
+
+    it('lets AI administrators list all events but not other admin roles', async () => {
+      const adminDb = testEnv.authenticatedContext('admin').firestore()
+      await assertSucceeds(getDocs(collection(adminDb, 'ai_monitoring_events')))
+      const superDb = testEnv.authenticatedContext('super').firestore()
+      await assertSucceeds(getDocs(collection(superDb, 'ai_monitoring_events')))
+      const analystDb = testEnv.authenticatedContext('analyst').firestore()
+      await assertFails(getDocs(collection(analystDb, 'ai_monitoring_events')))
+      const fitnessDb = testEnv.authenticatedContext('fitness').firestore()
+      await assertFails(getDocs(collection(fitnessDb, 'ai_monitoring_events')))
+    })
+
+    it('prevents every client from editing an event and reserves deletion to super admins', async () => {
+      const aliceDb = testEnv.authenticatedContext('alice').firestore()
+      await assertFails(updateDoc(doc(aliceDb, 'ai_monitoring_events', 'evtAlice'), { confidence: 0.1 }))
+      await assertFails(deleteDoc(doc(aliceDb, 'ai_monitoring_events', 'evtAlice')))
+
+      const adminDb = testEnv.authenticatedContext('admin').firestore()
+      await assertFails(deleteDoc(doc(adminDb, 'ai_monitoring_events', 'evtBob')))
+
+      const superDb = testEnv.authenticatedContext('super').firestore()
+      await assertSucceeds(deleteDoc(doc(superDb, 'ai_monitoring_events', 'evtBob')))
+    })
+
+    it('keeps official evaluation data outside client-writable collections', async () => {
+      const adminDb = testEnv.authenticatedContext('admin').firestore()
+      await assertFails(
+        setDoc(doc(adminDb, 'model_evaluations', 'forged'), {
+          modelId: 'form_classifier_squat',
+          accuracy: 0.99,
+        }),
+      )
+      const superDb = testEnv.authenticatedContext('super').firestore()
+      await assertFails(
+        setDoc(doc(superDb, 'model_evaluations', 'forged'), {
+          modelId: 'form_classifier_squat',
+          accuracy: 0.99,
+        }),
+      )
     })
   })
 

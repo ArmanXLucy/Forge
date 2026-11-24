@@ -17,7 +17,9 @@
     "prebuild": "npm run model:assets",
     "postbuild": "node scripts/verify-model-assets.mjs dist",
     "test": "vitest run",
-    "test:rules": "npx --yes firebase-tools@13.35.1 emulators:exec --only firestore --project forge-phase1-rules \"npx vitest run tests/firestore.rules.test.ts\""
+    "test:rules": "npx --yes firebase-tools@13.35.1 emulators:exec --only firestore --project forge-phase1-rules \"npx vitest run tests/firestore.rules.test.ts\"",
+    "eval:models": "workout-recommendation\\.venv\\Scripts\\python.exe scripts/evaluate-models.py",
+    "eval:models:check": "workout-recommendation\\.venv\\Scripts\\python.exe scripts/evaluate-models.py --check"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.1",

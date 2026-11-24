@@ -28,6 +28,8 @@ import { useDataStatus } from '../../hooks/useDataStatus'
 import { EXERCISES } from '../../features/ai-coach/types'
 import type { AIVerdict, ExerciseKey, Landmark, PoseFrame, ScoreResult } from '../../features/ai-coach/types'
 import { loadAIClient, loadPoseLandmarker, type AIClient } from '../../features/ai-coach/lib/modelClient'
+import { createMonitoringSessionRef, trackAIEvent } from '../../services/monitoring/aiMonitoring'
+import type { AIErrorCategory } from '../../features/ai-monitoring/types'
 import { measuredSummary, primaryAngle } from '../../features/ai-coach/lib/featurePipeline'
 import { RepCounter } from '../../features/ai-coach/lib/repCounter'
 import type { AISessionScore } from '../../types'
@@ -78,6 +80,14 @@ function formatCameraError(error: unknown) {
     return 'The camera is already in use by another application. Close it and try again.'
   }
   return (error as Error)?.message ?? 'The camera could not be started.'
+}
+
+function classifyCoachError(error: unknown): AIErrorCategory {
+  const message = String((error as Error)?.message ?? error ?? '').toLowerCase()
+  if (/camera|permission|notallowed|getusermedia|mediaDevices|device/i.test(message)) return 'camera'
+  if (/pose|landmarker|mediapipe/i.test(message)) return 'pose_detection'
+  if (/onnx|wasm|model|metadata|inference|timer|backend/i.test(message)) return 'model_load'
+  return 'unknown'
 }
 
 function formatSessionError(error: unknown) {
@@ -162,6 +172,19 @@ export default function AICoachPage() {
   const detectedRef = useRef(0)
   const elapsedRef = useRef(0)
   const landmarksRef = useRef<Landmark[] | null>(null)
+  const repsRef = useRef(0)
+  const modelVersionRef = useRef('1.0.0')
+  const monitoringRef = useRef<{
+    sessionRef: string
+    source: 'camera' | 'video'
+    startedAt: number
+    inferenceMs: number
+    inferenceCount: number
+    goodCount: number
+    badCount: number
+    errorCount: number
+    ended: boolean
+  } | null>(null)
 
   useEffect(() => {
     exerciseRef.current = exercise
@@ -228,6 +251,56 @@ export default function AICoachPage() {
     })
   }, [])
 
+  const startMonitoringAttempt = (nextSource: 'camera' | 'video') => {
+    const item = {
+      sessionRef: createMonitoringSessionRef('coach'),
+      source: nextSource,
+      startedAt: performance.now(),
+      inferenceMs: 0,
+      inferenceCount: 0,
+      goodCount: 0,
+      badCount: 0,
+      errorCount: 0,
+      ended: false,
+    }
+    monitoringRef.current = item
+    return item
+  }
+
+  const endMonitoringAttempt = useCallback(
+    (status: 'completed' | 'interrupted' | 'failed', error?: unknown) => {
+      const item = monitoringRef.current
+      if (!item || item.ended) return
+      item.ended = true
+      const errorCategory = status === 'failed' ? classifyCoachError(error) : undefined
+      trackAIEvent({
+        feature: 'ai-coach',
+        eventType:
+          status === 'completed'
+            ? 'coach.session.completed'
+            : status === 'interrupted'
+              ? 'coach.session.interrupted'
+              : 'coach.session.failed',
+        status: status === 'failed' ? 'error' : status === 'completed' ? 'ok' : 'info',
+        modelId: 'form_classifier',
+        modelVersion: modelVersionRef.current,
+        sessionRef: item.sessionRef,
+        exercise: exerciseRef.current,
+        source: item.source,
+        durationMs: Math.round(performance.now() - item.startedAt),
+        inferenceMsSum: Math.round(item.inferenceMs),
+        inferenceCount: item.inferenceCount,
+        goodCount: item.goodCount,
+        badCount: item.badCount,
+        reps: repsRef.current,
+        errorCount: item.errorCount,
+        errorCategory,
+        errorCode: errorCategory ? `${errorCategory}-error` : undefined,
+        message: error instanceof Error ? error.message : undefined,
+      })
+    },
+    [],
+  )
   const stopEverything = useCallback(
     (nextPhase: Phase = 'finished') => {
       pausedRef.current = true
@@ -241,6 +314,7 @@ export default function AICoachPage() {
 
   useEffect(() => {
     return () => {
+      endMonitoringAttempt('interrupted')
       stopLoop()
       stopStream()
       // Keep the module-level pose landmarker alive: it is reused when the user
@@ -248,7 +322,7 @@ export default function AICoachPage() {
       // behind and the next camera session could no longer detect a pose.
       if (fileUrlRef.current) URL.revokeObjectURL(fileUrlRef.current)
     }
-  }, [stopLoop, stopStream])
+  }, [endMonitoringAttempt, stopLoop, stopStream])
 
   useEffect(() => {
     if (phase !== 'live' || pausedRef.current) return
@@ -267,7 +341,16 @@ export default function AICoachPage() {
     const frames = framesRef.current.slice(-180)
     const currentExercise = exerciseRef.current
     try {
+      const scoreStartedAt = performance.now()
       const result = await clientRef.current.score(currentExercise, frames)
+      const scoreDurationMs = performance.now() - scoreStartedAt
+      const monitored = monitoringRef.current
+      if (monitored) {
+        monitored.inferenceMs += scoreDurationMs
+        monitored.inferenceCount += 1
+        if (result.verdict === 'good') monitored.goodCount += 1
+        else monitored.badCount += 1
+      }
       const measured = measuredSummary(frames, currentExercise)
       const sessionScore: AISessionScore = {
         atSeconds: elapsedRef.current,
@@ -285,6 +368,22 @@ export default function AICoachPage() {
       setVerdict(result.verdict)
       setCues(buildCues(currentExercise, result))
     } catch (scoreError) {
+      const monitored = monitoringRef.current
+      if (monitored) {
+        monitored.errorCount += 1
+        trackAIEvent({
+          feature: 'ai-coach',
+          eventType: 'inference.failed',
+          status: 'error',
+          modelId: 'form_classifier',
+          modelVersion: modelVersionRef.current,
+          sessionRef: monitored.sessionRef,
+          exercise: currentExercise,
+          errorCategory: 'inference',
+          errorCode: 'score-failed',
+          message: scoreError instanceof Error ? scoreError.message : 'Form scoring failed',
+        })
+      }
       setError(
         (scoreError as Error)?.message?.includes('ONNX') ||
           (scoreError as Error)?.message?.includes('input')
@@ -337,6 +436,7 @@ export default function AICoachPage() {
               detectedRef.current += 1
               const angle = primaryAngle([poseFrame], exerciseRef.current)
               const nextReps = repCounterRef.current.update(angle, now)
+              repsRef.current = nextReps
               setReps(nextReps)
               setFramesCount(framesRef.current.length)
               setDetectionRate(
@@ -377,6 +477,7 @@ export default function AICoachPage() {
       lastSampleRef.current = 0
       lastScoreRef.current = 0
       pausedRef.current = false
+      repsRef.current = 0
       setReps(0)
       setFramesCount(0)
       setElapsed(0)
@@ -388,19 +489,98 @@ export default function AICoachPage() {
       setError(null)
       setSaved(false)
       setPhase('live')
+      const monitored = monitoringRef.current
+      if (monitored) {
+        trackAIEvent({
+          feature: 'ai-coach',
+          eventType: 'coach.session.started',
+          status: 'info',
+          modelId: 'form_classifier',
+          modelVersion: modelVersionRef.current,
+          sessionRef: monitored.sessionRef,
+          exercise: exerciseRef.current,
+          source: nextSource,
+        })
+      }
       animationRef.current = requestAnimationFrame(loop)
     },
     [loop],
   )
 
+
   const ensureModels = useCallback(async () => {
+    const sessionRef = monitoringRef.current?.sessionRef
     if (!clientRef.current) {
       setLoadingLabel('Loading form models…')
-      clientRef.current = await loadAIClient()
+      const startedAt = performance.now()
+      trackAIEvent({
+        feature: 'ai-coach',
+        eventType: 'model.load_started',
+        status: 'info',
+        modelId: 'form_classifier',
+        sessionRef,
+      })
+      try {
+        clientRef.current = await loadAIClient()
+        modelVersionRef.current = clientRef.current.metadata.version
+        trackAIEvent({
+          feature: 'ai-coach',
+          eventType: 'model.load_succeeded',
+          status: 'ok',
+          modelId: 'form_classifier',
+          modelVersion: modelVersionRef.current,
+          sessionRef,
+          durationMs: Math.round(performance.now() - startedAt),
+        })
+      } catch (modelError) {
+        trackAIEvent({
+          feature: 'ai-coach',
+          eventType: 'model.load_failed',
+          status: 'error',
+          modelId: 'form_classifier',
+          sessionRef,
+          durationMs: Math.round(performance.now() - startedAt),
+          errorCategory: 'model_load',
+          errorCode: 'model-unavailable',
+          message: modelError instanceof Error ? modelError.message : 'Form model load failed',
+        })
+        throw modelError
+      }
     }
     if (!landmarkerRef.current) {
       setLoadingLabel('Loading pose detection…')
-      landmarkerRef.current = (await loadPoseLandmarker()) as MediaPipeLandmarker
+      const startedAt = performance.now()
+      trackAIEvent({
+        feature: 'ai-coach',
+        eventType: 'model.load_started',
+        status: 'info',
+        modelId: 'pose_landmarker',
+        sessionRef,
+      })
+      try {
+        landmarkerRef.current = (await loadPoseLandmarker()) as MediaPipeLandmarker
+        trackAIEvent({
+          feature: 'ai-coach',
+          eventType: 'model.load_succeeded',
+          status: 'ok',
+          modelId: 'pose_landmarker',
+          sessionRef,
+          durationMs: Math.round(performance.now() - startedAt),
+        })
+      } catch (poseError) {
+        trackAIEvent({
+          feature: 'ai-coach',
+          eventType: 'model.load_failed',
+          status: 'error',
+          modelId: 'pose_landmarker',
+          sessionRef,
+          durationMs: Math.round(performance.now() - startedAt),
+          errorCategory: 'pose_detection',
+          errorCode: 'pose-unavailable',
+          message: poseError instanceof Error ? poseError.message : 'Pose model load failed',
+        })
+        throw poseError
+      }
     }
   }, [])
 
@@ -408,6 +588,7 @@ export default function AICoachPage() {
     setError(null)
     setPhase('loading')
     setLoadingLabel('Starting camera…')
+    startMonitoringAttempt('camera')
     try {
       if (!navigator.mediaDevices?.getUserMedia) {
         throw new Error('This browser does not expose a camera API. Load a recorded video instead.')
@@ -426,6 +607,7 @@ export default function AICoachPage() {
       beginSession('camera')
     } catch (cameraError) {
       stopStream()
+      endMonitoringAttempt('failed', cameraError)
       setError(formatSessionError(cameraError))
       setPhase('idle')
     }
@@ -436,6 +618,7 @@ export default function AICoachPage() {
     setError(null)
     setPhase('loading')
     setLoadingLabel('Loading video and models…')
+    startMonitoringAttempt('video')
     try {
       if (fileUrlRef.current) URL.revokeObjectURL(fileUrlRef.current)
       fileUrlRef.current = URL.createObjectURL(file)
@@ -453,6 +636,7 @@ export default function AICoachPage() {
       beginSession('video')
     } catch (videoError) {
       stopStream()
+      endMonitoringAttempt('failed', videoError)
       setError(formatSessionError(videoError))
       setPhase('idle')
     }
@@ -475,15 +659,18 @@ export default function AICoachPage() {
   }
 
   const finishSession = () => {
+    endMonitoringAttempt('completed')
     stopEverything('finished')
   }
 
   const resetSession = () => {
+    endMonitoringAttempt('interrupted')
     stopEverything('idle')
     landmarksRef.current = null
     drawOverlay(null)
     framesRef.current = []
     scoresRef.current = []
+    repsRef.current = 0
     setReps(0)
     setFramesCount(0)
     setElapsed(0)
@@ -547,6 +734,25 @@ export default function AICoachPage() {
       verdict: overallVerdict,
       source: source ?? 'camera',
     })
+    const monitored = monitoringRef.current
+    if (monitored) {
+      trackAIEvent({
+        feature: 'ai-coach',
+        eventType: 'coach.session.saved',
+        status: 'ok',
+        modelId: 'form_classifier',
+        modelVersion: modelVersionRef.current,
+        sessionRef: monitored.sessionRef,
+        exercise,
+        source: source ?? 'camera',
+        durationMs: elapsed * 1000,
+        reps,
+        goodCount: scores.filter((score) => score.verdict === 'good').length,
+        badCount: scores.filter((score) => score.verdict !== 'good').length,
+        inferenceMsSum: Math.round(monitored.inferenceMs),
+        inferenceCount: monitored.inferenceCount,
+      })
+    }
     setSaved(true)
     toast.success(dataStatus.isCloud ? 'AI session saved to your account.' : 'AI session saved on this device.')
   }

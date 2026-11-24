@@ -37,6 +37,7 @@ const AdminTicketPage = lazy(() => import('./pages/Admin/HelpDeskTicketPage'))
 const AdminSupportAnalyticsPage = lazy(() => import('./pages/Admin/SupportAnalyticsPage'))
 const AdminAIMonitoringPage = lazy(() => import('./pages/Admin/AIMonitoringPage'))
 const AdminAICoachPage = lazy(() => import('./pages/Admin/AICoachMonitoringPage'))
+const AdminAIErrorLogPage = lazy(() => import('./pages/Admin/AIErrorLogPage'))
 const AdminAnalyticsPage = lazy(() => import('./pages/Admin/AnalyticsPage'))
 const AdminMediaPage = lazy(() => import('./pages/Admin/MediaPage'))
 const AdminNotificationsPage = lazy(() => import('./pages/Admin/NotificationsPage'))
@@ -166,6 +167,7 @@ export default function App() {
             <Route path="support-analytics" element={<RequireAdminPermission permission="manage_support"><AdminSupportAnalyticsPage /></RequireAdminPermission>} />
             <Route path="ai-monitoring" element={<RequireAdminPermission permission="manage_ai"><AdminAIMonitoringPage /></RequireAdminPermission>} />
             <Route path="ai-coach-monitoring" element={<RequireAdminPermission permission="manage_ai"><AdminAICoachPage /></RequireAdminPermission>} />
+            <Route path="ai-errors" element={<RequireAdminPermission permission="manage_ai"><AdminAIErrorLogPage /></RequireAdminPermission>} />
             <Route path="analytics" element={<RequireAdminPermission permission="view_analytics"><AdminAnalyticsPage /></RequireAdminPermission>} />
             <Route path="media" element={<RequireAdminPermission permission="manage_platform"><AdminMediaPage /></RequireAdminPermission>} />
             <Route path="notifications" element={<RequireAdminPermission permission="manage_platform"><AdminNotificationsPage /></RequireAdminPermission>} />

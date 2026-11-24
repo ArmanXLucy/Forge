@@ -70,6 +70,12 @@ service cloud.firestore {
       return hasRole(['super_admin']);
     }
 
+    // AI monitoring and error data is operational, not member-facing. It is
+    // readable only by the same administrators who can open the AI pages.
+    function canManageAI() {
+      return hasRole(['super_admin', 'admin']);
+    }
+
     function ownsUserId(uid) {
       return !('userId' in request.resource.data) || request.resource.data.userId == uid;
     }
@@ -208,6 +214,65 @@ service cloud.firestore {
         ]);
     }
 
+    // Monitoring events are client-reported telemetry. Rules cannot prove that
+    // an event came from a genuine inference, but they can force ownership,
+    // a fixed schema, bounded values and a server timestamp. Official model
+    // evaluation and registry data is never accepted here: it is generated
+    // offline into a static artifact and deployed with the app.
+    function validAIMonitoringEvent(eventId, uid) {
+      let data = request.resource.data;
+      return data.userId == uid &&
+        data.eventId == eventId &&
+        data.schemaVersion == 1 &&
+        data.createdAt == request.time &&
+        data.appVersion is string && data.appVersion.size() <= 32 &&
+        data.feature in ['workout-recommendation', 'ai-coach'] &&
+        data.eventType in [
+          'recommendation.requested', 'recommendation.generated',
+          'recommendation.failed', 'recommendation.saved',
+          'recommendation.save_failed', 'model.load_started',
+          'model.load_succeeded', 'model.load_failed', 'inference.started',
+          'inference.succeeded', 'inference.failed', 'validation.passed',
+          'validation.failed', 'coach.session.started',
+          'coach.session.completed', 'coach.session.interrupted',
+          'coach.session.failed', 'coach.session.saved'
+        ] &&
+        data.status in ['info', 'ok', 'error'] &&
+        data.keys().hasAll([
+          'schemaVersion', 'eventId', 'userId', 'appVersion', 'feature',
+          'eventType', 'status', 'createdAt'
+        ]) &&
+        data.keys().hasOnly([
+          'schemaVersion', 'eventId', 'userId', 'appVersion', 'feature',
+          'eventType', 'status', 'createdAt', 'sessionRef', 'modelId',
+          'modelVersion', 'exercise', 'category', 'confidence', 'durationMs',
+          'inferenceMsSum', 'inferenceCount', 'goodCount', 'badCount',
+          'reps', 'errorCount', 'errorCategory', 'errorCode', 'message',
+          'source'
+        ]) &&
+        (!('sessionRef' in data) || (data.sessionRef is string && data.sessionRef.size() <= 64)) &&
+        (!('modelId' in data) || (data.modelId is string && data.modelId.size() <= 64)) &&
+        (!('modelVersion' in data) || (data.modelVersion is string && data.modelVersion.size() <= 40)) &&
+        (!('exercise' in data) || (data.exercise is string && data.exercise.size() <= 32)) &&
+        (!('category' in data) || (data.category is string && data.category.size() <= 120)) &&
+        (!('source' in data) || data.source in ['camera', 'video']) &&
+        (!('confidence' in data) || (data.confidence is number && data.confidence >= 0 && data.confidence <= 1)) &&
+        (!('durationMs' in data) || (data.durationMs is number && data.durationMs >= 0 && data.durationMs <= 86400000)) &&
+        (!('inferenceMsSum' in data) || (data.inferenceMsSum is number && data.inferenceMsSum >= 0 && data.inferenceMsSum <= 86400000)) &&
+        (!('inferenceCount' in data) || (data.inferenceCount is number && data.inferenceCount >= 0 && data.inferenceCount <= 100000)) &&
+        (!('goodCount' in data) || (data.goodCount is number && data.goodCount >= 0 && data.goodCount <= 100000)) &&
+        (!('badCount' in data) || (data.badCount is number && data.badCount >= 0 && data.badCount <= 100000)) &&
+        (!('reps' in data) || (data.reps is number && data.reps >= 0 && data.reps <= 100000)) &&
+        (!('errorCount' in data) || (data.errorCount is number && data.errorCount >= 0 && data.errorCount <= 100000)) &&
+        (!('errorCategory' in data) || data.errorCategory in [
+          'model_load', 'schema_load', 'feature_extraction', 'inference',
+          'validation', 'persistence', 'camera', 'pose_detection', 'unknown'
+        ]) &&
+        (!('errorCode' in data) || (data.errorCode is string && data.errorCode.size() <= 64)) &&
+        (!('message' in data) || (data.message is string && data.message.size() <= 240)) &&
+        (data.status != 'error' ||
+          ('errorCategory' in data && 'errorCode' in data));
+    }
     // ---------------------------------------------------------------- users
     match /users/{uid} {
       // A suspended owner must still be able to read the root document so the
@@ -294,6 +359,21 @@ service cloud.firestore {
       allow read: if canManageUsers();
     }
 
+    // ------------------------------------------------------- AI monitoring
+    // Members may create their own telemetry; only owners and AI admins may
+    // read it. No client can update or delete an event (retention cleanup is
+    // reserved to a super administrator). There is deliberately no rule for
+    // evaluation results or model registry writes: those are static deployment
+    // artifacts produced by scripts/evaluate-models.py.
+    match /ai_monitoring_events/{eventId} {
+      allow get: if activeOwner(resource.data.userId) || canManageAI();
+      allow list: if canManageAI() ||
+        (signedIn() && resource.data.userId == request.auth.uid);
+      allow create: if activeOwner(request.auth.uid) &&
+        validAIMonitoringEvent(eventId, request.auth.uid);
+      allow update: if false;
+      allow delete: if canManagePlatform();
+    }
     // ----------------------------------------------------------- admin roles
     match /adminUsers/{uid} {
       allow get: if isOwner(uid) || isAdmin();

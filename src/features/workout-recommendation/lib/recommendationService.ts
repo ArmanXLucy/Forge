@@ -1,6 +1,7 @@
 import type { MissionAnswerMap, RecommendationDocument } from '../types'
 import { evaluateReadiness, buildModelInput } from './modelInput'
 import { generateWorkoutPlan } from './generator'
+import { createMonitoringSessionRef, trackAIEvent } from '../../../services/monitoring/aiMonitoring'
 
 export type RecommendationErrorCode =
   | 'not-ready'
@@ -72,12 +73,53 @@ export interface GenerateOptions {
   previousPlans: RecommendationDocument[]
 }
 
+function errorCategoryFor(code: RecommendationErrorCode) {
+  switch (code) {
+    case 'model-unavailable':
+      return 'model_load' as const
+    case 'schema-unavailable':
+      return 'schema_load' as const
+    case 'inference-failed':
+      return 'inference' as const
+    case 'persistence-failed':
+      return 'persistence' as const
+    default:
+      return 'validation' as const
+  }
+}
+
 export async function createRecommendation(options: GenerateOptions): Promise<RecommendationDocument> {
+  const sessionRef = createMonitoringSessionRef('rec')
+  const startedAt = performance.now()
+  trackAIEvent({
+    feature: 'workout-recommendation',
+    eventType: 'recommendation.requested',
+    status: 'info',
+    modelId: 'workout_recommendation',
+    sessionRef,
+  })
+
+  const fail = (code: RecommendationErrorCode, message: string) => {
+    trackAIEvent({
+      feature: 'workout-recommendation',
+      eventType: 'recommendation.failed',
+      status: 'error',
+      modelId: 'workout_recommendation',
+      sessionRef,
+      durationMs: Math.round(performance.now() - startedAt),
+      errorCategory: errorCategoryFor(code),
+      errorCode: code,
+      message,
+    })
+  }
+
   const readiness = evaluateReadiness(options.profile, options.answers, options.progress)
   if (!readiness.ready) {
+    const message = 'Your personalised plan is locked until every required mission is complete and valid.'
+    fail('not-ready', message)
     throw new RecommendationError(
       'not-ready',
-      'Your personalised plan is locked until every required mission is complete and valid.',
+      message,
       [
         ...readiness.remainingMissionIds.map((id) => `Mission incomplete: ${id}`),
         ...readiness.missingAnswerMissions.map((id) => `Answers missing: ${id}`),
@@ -91,12 +133,14 @@ export async function createRecommendation(options: GenerateOptions): Promise<Re
   try {
     // Load ONNX Runtime only when the user actually generates a plan.
     const inference = await import('./inference')
-    prediction = await inference.predictPlanCategory(model.input)
+    prediction = await inference.predictPlanCategory(model.input, { sessionRef })
   } catch (error) {
     const inference = await import('./inference')
     if (error instanceof inference.InferenceError) {
+      fail(error.code, error.message)
       throw new RecommendationError(error.code, error.message, [String(error.detail ?? '')])
     }
+    fail('inference-failed', 'The AI model could not produce a prediction.')
     throw new RecommendationError('inference-failed', 'The AI model could not produce a prediction.')
   }
 
@@ -114,11 +158,42 @@ export async function createRecommendation(options: GenerateOptions): Promise<Re
       seed: Date.now() % 100000,
     })
     plan.missionSnapshot.answers = authoritativeAnswers(options.answers)
+    trackAIEvent({
+      feature: 'workout-recommendation',
+      eventType: 'validation.passed',
+      status: 'ok',
+      modelId: 'workout_recommendation',
+      modelVersion: prediction.modelVersion,
+      sessionRef,
+      category: prediction.label,
+    })
+    trackAIEvent({
+      feature: 'workout-recommendation',
+      eventType: 'recommendation.generated',
+      status: 'ok',
+      modelId: 'workout_recommendation',
+      modelVersion: prediction.modelVersion,
+      sessionRef,
+      category: prediction.label,
+      confidence: prediction.confidence,
+      durationMs: Math.round(performance.now() - startedAt),
+    })
     return plan
   } catch (error) {
-    throw new RecommendationError(
-      'schedule-invalid',
-      error instanceof Error ? error.message : 'The workout schedule failed safety validation.',
-    )
+    const message = error instanceof Error ? error.message : 'The workout schedule failed safety validation.'
+    trackAIEvent({
+      feature: 'workout-recommendation',
+      eventType: 'validation.failed',
+      status: 'error',
+      modelId: 'workout_recommendation',
+      modelVersion: prediction.modelVersion,
+      sessionRef,
+      category: prediction.label,
+      errorCategory: 'validation',
+      errorCode: 'schedule-invalid',
+      message,
+    })
+    fail('schedule-invalid', message)
+    throw new RecommendationError('schedule-invalid', message)
   }
 }

@@ -1,6 +1,7 @@
 import type { ComponentType } from 'react'
 import {
   Activity,
+  AlertTriangle,
   BarChart3,
   Bell,
   BrainCircuit,
@@ -68,6 +69,7 @@ export const adminNavGroups: AdminNavGroup[] = [
     items: [
       { label: 'Model Monitoring', to: '/admin/ai-monitoring', icon: BrainCircuit, permission: 'manage_ai' },
       { label: 'AI Coach Monitoring', to: '/admin/ai-coach-monitoring', icon: Watch, permission: 'manage_ai' },
+      { label: 'AI Error Log', to: '/admin/ai-errors', icon: AlertTriangle, permission: 'manage_ai' },
     ],
   },
   {
