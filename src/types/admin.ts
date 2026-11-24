@@ -35,6 +35,9 @@ export interface AdminUserSummary {
   photoURL: string | null
   avatarUrl: string | null
   accountStatus: AccountStatus
+  suspensionReason: string | null
+  suspendedAt: string | null
+  suspendedByName: string | null
   goal: string | null
   experience: string | null
   createdAt: string
@@ -56,9 +59,21 @@ export interface AdminUserDetail {
   }>
   measurements: Array<{ id: string; measuredAt: string; weightKg: number | null }>
   missions: Array<{ missionId: string; status: string; completedAt: string | null }>
+  workoutCount: number
+  measurementCount: number
   nutritionDays: number
   aiSessions: number
-  tickets: number
+  ticketCount: number
+  recentTickets: import('./support').SupportTicket[]
+  recentNutrition: Array<{
+    id: string
+    date: string
+    calories: number
+    protein: number
+    carbs: number
+    fat: number
+    mealCount: number
+  }>
 }
 
 export interface AdminActivityLog {
@@ -69,7 +84,24 @@ export interface AdminActivityLog {
   targetType: string
   targetId: string
   detail: string
+  metadata?: Record<string, unknown>
   createdAt: string
+}
+
+export type AnnouncementStatus = 'draft' | 'published' | 'archived'
+export type AnnouncementTone = 'info' | 'update' | 'maintenance'
+
+export interface Announcement {
+  id: string
+  title: string
+  body: string
+  status: AnnouncementStatus
+  tone: AnnouncementTone
+  createdBy: string
+  createdByName: string
+  createdAt: string
+  updatedAt: string
+  publishedAt: string | null
 }
 
 export interface AdminWorkoutPlan {
@@ -117,6 +149,41 @@ export interface PlatformSettings {
   supportSlaHours: number
   maintenanceMessage: string
   updatedAt: string
+}
+
+export interface AdminOverviewCounts {
+  users: number
+  suspendedUsers: number
+  activeUsers: number
+  newUsers: number
+  workouts: number
+  missions: number
+  aiSessions: number
+  nutritionDays: number
+  tickets: number
+  openTickets: number
+  resolvedTickets: number
+}
+
+export interface AdminOverview {
+  counts: AdminOverviewCounts
+  registrationTrend: Array<{ key: string; label: string; count: number }>
+  activityTrend: Array<{ key: string; label: string; workouts: number; ai: number }>
+  ticketBreakdown: Array<{ status: string; count: number }>
+  exerciseMix: Array<{ name: string; count: number }>
+  recentUsers: AdminUserSummary[]
+  recentWorkouts: Array<{
+    id: string
+    userId: string
+    title: string
+    completedAt: string
+    exercisesCompleted: number
+    totalExercises: number
+  }>
+  recentTickets: import('./support').SupportTicket[]
+  recentAdminActivity: AdminActivityLog[]
+  errors: string[]
+  bounded: string[]
 }
 
 export interface AdminSnapshot {

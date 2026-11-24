@@ -16,6 +16,7 @@ import { roleLabel } from '../../features/admin/access'
 import {
   listAdminUsers,
   listAllUsers,
+  logAdminActivity,
   provisionAdmin,
   setAdminActive,
   updateAdminRole,
@@ -77,6 +78,17 @@ export default function RolesPage() {
     setSaving(true)
     try {
       await updateAdminRole(target.uid, nextRole)
+      if (admin) {
+        await logAdminActivity({
+          adminId: admin.uid,
+          adminName: admin.name,
+          action: 'admin.role',
+          targetType: 'admin_user',
+          targetId: target.uid,
+          detail: `${target.name}: ${target.role} -> ${nextRole}`,
+          metadata: { previousRole: target.role, nextRole },
+        })
+      }
       setAdmins((items) => items.map((item) => (item.uid === target.uid ? { ...item, role: nextRole } : item)))
       toast.success(`${target.name} is now ${roleLabel(nextRole)}.`)
     } catch (reason) {
@@ -113,6 +125,17 @@ export default function RolesPage() {
         name: selectedUser.fullName,
         role,
       })
+      if (admin) {
+        await logAdminActivity({
+          adminId: admin.uid,
+          adminName: admin.name,
+          action: 'admin.provision',
+          targetType: 'admin_user',
+          targetId: selectedUser.uid,
+          detail: `${selectedUser.fullName} provisioned as ${role}`,
+          metadata: { role },
+        })
+      }
       await load()
       setProvisionOpen(false)
       setSelectedUser(null)

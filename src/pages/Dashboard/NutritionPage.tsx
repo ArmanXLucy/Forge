@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
   AlertTriangle,
@@ -30,6 +30,8 @@ import { Modal } from '../../components/ui/Modal'
 import { DAILY_MEALS, NUTRITION_TARGETS } from '../../data/dashboard'
 import { useActivityStore } from '../../store/useActivityStore'
 import { useDataStatus } from '../../hooks/useDataStatus'
+import { getPublishedNutritionPlans } from '../../services/cloud/adminRepository'
+import type { AdminNutritionPlan } from '../../types/admin'
 import { dateKey, sumMeals } from '../../utils/activity'
 import { cn } from '../../lib/utils'
 
@@ -197,6 +199,7 @@ export default function NutritionPage() {
   const removeMeal = useActivityStore((s) => s.removeMeal)
   const [selectedDate, setSelectedDate] = useState(() => new Date())
   const [mealOpen, setMealOpen] = useState(false)
+  const [publishedPlans, setPublishedPlans] = useState<AdminNutritionPlan[]>([])
 
   const dayKey = dateKey(selectedDate)
   const isToday = dayKey === dateKey(new Date())
@@ -219,6 +222,19 @@ export default function NutritionPage() {
       logged: entries.length > 0,
     }
   })
+
+  useEffect(() => {
+    if (!isCloud) return
+    let cancelled = false
+    getPublishedNutritionPlans()
+      .then((plans) => {
+        if (!cancelled) setPublishedPlans(plans)
+      })
+      .catch(() => undefined)
+    return () => {
+      cancelled = true
+    }
+  }, [isCloud])
 
   const proteinPercent = Math.min(100, Math.round((totals.protein / NUTRITION_TARGETS.protein) * 100))
 
@@ -560,6 +576,52 @@ export default function NutritionPage() {
           </ul>
         </SectionCard>
       </div>
+
+      {publishedPlans.length > 0 && (
+        <SectionCard
+          className="mt-4"
+          eyebrow="Coaching library"
+          title={`${publishedPlans.length} published nutrition guidance${publishedPlans.length === 1 ? '' : 's'}.`}
+          action={<SourceBadge source="live" label="Published by Forge" />}
+        >
+          <div className="grid gap-3 sm:grid-cols-2">
+            {publishedPlans.map((plan) => (
+              <article key={plan.id} className="rounded-xl border border-charcoal/10 p-4">
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <p className="text-[12px] font-semibold text-charcoal">{plan.name}</p>
+                    <p className="mt-0.5 text-[9px] font-bold uppercase tracking-[0.1em] text-charcoal/35">
+                      {plan.goal || 'General guidance'}
+                    </p>
+                  </div>
+                  <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-[8px] font-bold uppercase tracking-[0.1em] text-emerald-700">
+                    Published
+                  </span>
+                </div>
+                <div className="mt-3 grid grid-cols-4 gap-2">
+                  {[
+                    ['kcal', plan.calories],
+                    ['P', plan.protein],
+                    ['C', plan.carbs],
+                    ['F', plan.fat],
+                  ].map(([label, value]) => (
+                    <div key={String(label)} className="rounded-lg bg-ivory px-2 py-1.5 text-center">
+                      <p className="text-[8px] font-bold uppercase tracking-[0.08em] text-charcoal/30">{label}</p>
+                      <p className="text-[12px] font-semibold text-charcoal">{value}</p>
+                    </div>
+                  ))}
+                </div>
+                {plan.notes && (
+                  <p className="mt-2 whitespace-pre-line text-[10px] leading-relaxed text-charcoal/45">{plan.notes}</p>
+                )}
+              </article>
+            ))}
+          </div>
+          <p className="mt-3 text-[9px] leading-relaxed text-charcoal/30">
+            Published coaching guidance is separate from your logged intake and is not a medical prescription.
+          </p>
+        </SectionCard>
+      )}
 
       <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 text-[9px] uppercase tracking-[0.1em] text-charcoal/25">
         <span className="inline-flex items-center gap-1.5">

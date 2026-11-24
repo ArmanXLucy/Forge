@@ -9,6 +9,7 @@ import {
   serverTimestamp,
   setDoc,
   Timestamp,
+  updateDoc,
   type DocumentData,
   type Firestore,
 } from 'firebase/firestore'
@@ -36,6 +37,8 @@ export interface CloudUserRecord {
   avatarPath: string | null
   avatarCleared: boolean
   accountStatus: 'active' | 'suspended'
+  suspensionReason: string | null
+  suspendedByName: string | null
   profile: QuickStartProfile | null
 }
 
@@ -117,6 +120,14 @@ export async function getUserRecord(uid: string): Promise<CloudUserRecord | null
     avatarPath: stringOrNull(data.avatarPath),
     avatarCleared: data.avatarCleared === true,
     accountStatus: data.accountStatus === 'suspended' ? 'suspended' : 'active',
+    suspensionReason:
+      typeof data.suspensionReason === 'string' && data.suspensionReason.trim()
+        ? data.suspensionReason
+        : null,
+    suspendedByName:
+      typeof data.suspendedByName === 'string' && data.suspendedByName.trim()
+        ? data.suspendedByName
+        : null,
     profile: normaliseProfile(data),
   }
 }
@@ -126,10 +137,19 @@ export async function ensureUserAccount(
   account: { email: string | null; displayName: string | null; photoURL?: string | null },
 ): Promise<void> {
   const snapshot = await getDoc(userDoc(uid))
-  if (snapshot.exists()) return
+  if (snapshot.exists()) {
+    if (!('accountStatus' in snapshot.data())) {
+      await updateDoc(userDoc(uid), {
+        accountStatus: 'active',
+        updatedAt: serverTimestamp(),
+      })
+    }
+    return
+  }
   await setDoc(userDoc(uid), {
     uid,
     fullName: account.displayName ?? null,
+    accountStatus: 'active',
     email: account.email ?? null,
     photoURL: account.photoURL ?? null,
     avatarUrl: null,

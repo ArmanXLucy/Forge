@@ -290,7 +290,7 @@ export default function AdminTicketPage() {
                   ['Workouts', userDetail.workouts.length],
                   ['Missions', userDetail.missions.length],
                   ['AI sessions', userDetail.aiSessions],
-                  ['Tickets', userDetail.tickets],
+                  ['Tickets', userDetail.ticketCount],
                 ].map(([label, value]) => (
                   <div key={String(label)} className="rounded-lg bg-ivory p-2.5">
                     <p className="text-[8px] font-bold uppercase tracking-[0.1em] text-charcoal/35">{label}</p>
@@ -328,6 +328,11 @@ export default function AdminTicketPage() {
               <button type="button" disabled={saving || ticket.status === 'closed'} onClick={() => void changeField({ status: 'closed' }, 'Status')} className={buttonClasses('outline', 'sm')}>
                 Close
               </button>
+              {['resolved', 'closed'].includes(ticket.status) && (
+                <button type="button" disabled={saving} onClick={() => void changeField({ status: 'open' }, 'Status')} className={buttonClasses('outline', 'sm')}>
+                  Reopen
+                </button>
+              )}
             </div>
           </AdminPanel>
 

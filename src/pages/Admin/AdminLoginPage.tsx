@@ -136,7 +136,7 @@ export default function AdminLoginPage() {
                 onChange={(event) => setEmail(event.target.value)}
                 required
                 autoComplete="email"
-                placeholder="admin@forge-athletic.ch"
+                placeholder="Administrator email"
                 className="w-full rounded-xl border border-white/15 bg-white/[0.04] px-4 py-3 text-[14px] text-white placeholder:text-white/20 focus:border-orange-500 focus:outline-none focus:ring-4 focus:ring-orange-500/10"
               />
             </label>

@@ -40,6 +40,8 @@ const AdminAICoachPage = lazy(() => import('./pages/Admin/AICoachMonitoringPage'
 const AdminAnalyticsPage = lazy(() => import('./pages/Admin/AnalyticsPage'))
 const AdminMediaPage = lazy(() => import('./pages/Admin/MediaPage'))
 const AdminNotificationsPage = lazy(() => import('./pages/Admin/NotificationsPage'))
+const AdminAnnouncementsPage = lazy(() => import('./pages/Admin/AnnouncementsPage'))
+const AdminActivityPage = lazy(() => import('./pages/Admin/ActivityLogPage'))
 const AdminSettingsPage = lazy(() => import('./pages/Admin/SettingsPage'))
 const AdminProfilePage = lazy(() => import('./pages/Admin/ProfilePage'))
 const PrivacyPage = lazy(() => import('./pages/Legal/PrivacyPage'))
@@ -167,6 +169,8 @@ export default function App() {
             <Route path="analytics" element={<RequireAdminPermission permission="view_analytics"><AdminAnalyticsPage /></RequireAdminPermission>} />
             <Route path="media" element={<RequireAdminPermission permission="manage_platform"><AdminMediaPage /></RequireAdminPermission>} />
             <Route path="notifications" element={<RequireAdminPermission permission="manage_platform"><AdminNotificationsPage /></RequireAdminPermission>} />
+            <Route path="announcements" element={<RequireAdminPermission permission="manage_platform"><AdminAnnouncementsPage /></RequireAdminPermission>} />
+            <Route path="activity" element={<RequireAdminPermission permission="view_analytics"><AdminActivityPage /></RequireAdminPermission>} />
             <Route path="settings" element={<RequireAdminPermission permission="manage_platform"><AdminSettingsPage /></RequireAdminPermission>} />
             <Route path="profile" element={<AdminProfilePage />} />
             <Route path="*" element={<Navigate to="/admin/overview" replace />} />

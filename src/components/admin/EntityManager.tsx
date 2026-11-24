@@ -1,10 +1,16 @@
 import { useEffect, useState } from 'react'
-import { Loader2, Pencil, Plus, Search, Trash2 } from 'lucide-react'
+import { EyeOff, Loader2, Pencil, Plus, Search, Send, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { AdminEmptyState, AdminError, AdminLoading, AdminPageHeader, AdminPanel } from './ui'
 import { Modal } from '../ui/Modal'
 import { Button, buttonClasses } from '../ui/Button'
-import { deleteContent, listContent, saveContent } from '../../services/cloud/adminRepository'
+import {
+  deleteContent,
+  listContent,
+  logAdminActivity,
+  saveContent,
+} from '../../services/cloud/adminRepository'
+import { useAdminAccess } from '../../features/admin/useAdminAccess'
 
 export type EntityField = {
   key: string
@@ -52,6 +58,7 @@ export function EntityManager({
   columns: EntityColumn[]
   defaults: Record<string, string | boolean | number>
 }) {
+  const { admin } = useAdminAccess()
   const [rows, setRows] = useState<Row[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -126,7 +133,19 @@ export function EntityManager({
               ? value === true
               : String(value ?? '').trim()
       })
-      await saveContent(collection, editing?.id ?? '', payload)
+      const id = await saveContent(collection, editing?.id ?? '', payload)
+      if (admin) {
+        const label = String(payload[columns[0]?.key ?? 'name'] ?? entityName)
+        await logAdminActivity({
+          adminId: admin.uid,
+          adminName: admin.name,
+          action: editing ? 'content.update' : 'content.create',
+          targetType: collection,
+          targetId: id,
+          detail: `${entityName}: ${label}`,
+          metadata: { status: String(payload.status ?? '') || undefined },
+        })
+      }
       await load()
       setOpen(false)
       toast.success(`${entityName} saved.`)
@@ -142,8 +161,50 @@ export function EntityManager({
     if (!window.confirm(`Delete “${label}”? This cannot be undone.`)) return
     try {
       await deleteContent(collection, row.id)
+      if (admin) {
+        await logAdminActivity({
+          adminId: admin.uid,
+          adminName: admin.name,
+          action: 'content.delete',
+          targetType: collection,
+          targetId: row.id,
+          detail: `${entityName}: ${label}`,
+        })
+      }
       setRows((items) => items.filter((item) => item.id !== row.id))
       toast.success(`${entityName} deleted.`)
+    } catch (reason) {
+      toast.error((reason as Error).message)
+    }
+  }
+
+  const statusField = fields.find((field) => field.key === 'status')
+
+  const togglePublished = async (row: Row) => {
+    if (!statusField) return
+    const publish = row.status !== 'published'
+    const label = String(row[columns[0]?.key ?? 'name'] ?? entityName)
+    try {
+      await saveContent(collection, row.id, {
+        status: publish ? 'published' : 'draft',
+      })
+      if (admin) {
+        await logAdminActivity({
+          adminId: admin.uid,
+          adminName: admin.name,
+          action: publish ? 'content.publish' : 'content.unpublish',
+          targetType: collection,
+          targetId: row.id,
+          detail: `${entityName}: ${label}`,
+          metadata: { status: publish ? 'published' : 'draft' },
+        })
+      }
+      setRows((items) =>
+        items.map((item) =>
+          item.id === row.id ? { ...item, status: publish ? 'published' : 'draft' } : item,
+        ),
+      )
+      toast.success(publish ? `${entityName} published.` : `${entityName} moved to draft.`)
     } catch (reason) {
       toast.error((reason as Error).message)
     }
@@ -202,6 +263,20 @@ export function EntityManager({
                     ))}
                     <td className="px-5 py-3.5 text-right">
                       <div className="flex justify-end gap-1.5">
+                        {statusField && (
+                          <button
+                            type="button"
+                            onClick={() => void togglePublished(row)}
+                            aria-label={row.status === 'published' ? 'Unpublish' : 'Publish'}
+                            className="flex h-8 w-8 items-center justify-center rounded-lg border border-charcoal/10 text-charcoal/45 hover:border-orange-200 hover:bg-orange-50 hover:text-orange-600"
+                          >
+                            {row.status === 'published' ? (
+                              <EyeOff className="h-3.5 w-3.5" />
+                            ) : (
+                              <Send className="h-3.5 w-3.5" />
+                            )}
+                          </button>
+                        )}
                         <button type="button" onClick={() => startEdit(row)} aria-label="Edit" className="flex h-8 w-8 items-center justify-center rounded-lg border border-charcoal/10 text-charcoal/45 hover:text-orange-600">
                           <Pencil className="h-3.5 w-3.5" />
                         </button>

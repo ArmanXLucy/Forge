@@ -74,6 +74,52 @@ service cloud.firestore {
       return !('userId' in request.resource.data) || request.resource.data.userId == uid;
     }
 
+    function validAdminWrite(uid) {
+      return request.resource.data.uid == uid &&
+        request.resource.data.role in [
+          'super_admin', 'admin', 'fitness_manager', 'support_manager', 'analyst'
+        ] &&
+        request.resource.data.active is bool &&
+        request.resource.data.permissions is list;
+    }
+
+    function validAdminUserUpdate() {
+      let diff = request.resource.data.diff(resource.data).affectedKeys();
+      return diff.hasOnly([
+        'fullName', 'accountStatus', 'adminNote', 'suspensionReason',
+        'suspendedAt', 'suspendedBy', 'suspendedByName', 'updatedAt'
+      ]) &&
+        (!('accountStatus' in request.resource.data) ||
+          request.resource.data.accountStatus in ['active', 'suspended']) &&
+        (!('fullName' in request.resource.data) ||
+          (request.resource.data.fullName is string &&
+            request.resource.data.fullName.size() <= 120)) &&
+        (!('suspensionReason' in request.resource.data) ||
+          request.resource.data.suspensionReason == null ||
+          (request.resource.data.suspensionReason is string &&
+            request.resource.data.suspensionReason.size() <= 500)) &&
+        (!('adminNote' in request.resource.data) ||
+          request.resource.data.adminNote == null ||
+          (request.resource.data.adminNote is string &&
+            request.resource.data.adminNote.size() <= 1000));
+    }
+
+    function validAnnouncementWrite() {
+      return request.resource.data.schemaVersion == 1 &&
+        request.resource.data.title is string &&
+        request.resource.data.title.size() >= 3 &&
+        request.resource.data.title.size() <= 140 &&
+        request.resource.data.body is string &&
+        request.resource.data.body.size() >= 10 &&
+        request.resource.data.body.size() <= 4000 &&
+        request.resource.data.status in ['draft', 'published', 'archived'] &&
+        request.resource.data.tone in ['info', 'update', 'maintenance'] &&
+        request.resource.data.createdBy is string &&
+        request.resource.data.updatedAt is timestamp &&
+        (request.resource.data.publishedAt == null ||
+          request.resource.data.publishedAt is timestamp);
+    }
+
     function validTicketCreate(ticketId) {
       return signedIn() &&
         request.resource.data.userId == request.auth.uid &&
@@ -169,16 +215,25 @@ service cloud.firestore {
       allow get, list: if isOwner(uid) || isAdmin();
       allow create: if isOwner(uid) &&
         request.resource.data.uid == uid &&
+        (!('accountStatus' in request.resource.data) ||
+          request.resource.data.accountStatus == 'active') &&
         !request.resource.data.keys().hasAny([
-          'accountStatus', 'adminNote', 'role', 'permissions', 'isAdmin', 'adminRole'
+          'adminNote', 'role', 'permissions', 'isAdmin', 'adminRole'
         ]);
       allow update: if (isOwner(uid) &&
           resource.data.get('accountStatus', 'active') != 'suspended' &&
           (!('uid' in request.resource.data) || request.resource.data.uid == uid) &&
           !request.resource.data.diff(resource.data).affectedKeys().hasAny([
-            'accountStatus', 'adminNote', 'role', 'permissions', 'isAdmin', 'adminRole'
+            'accountStatus', 'adminNote', 'suspensionReason', 'suspendedAt',
+            'suspendedBy', 'suspendedByName', 'role', 'permissions', 'isAdmin', 'adminRole'
           ])) ||
-        canManageUsers();
+        (isOwner(uid) &&
+          !('accountStatus' in resource.data) &&
+          request.resource.data.accountStatus == 'active' &&
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+            'accountStatus', 'updatedAt'
+          ])) ||
+        (canManageUsers() && validAdminUserUpdate());
       allow delete: if (isOwner(uid) &&
         resource.data.get('accountStatus', 'active') != 'suspended') || canManageRoles();
 
@@ -243,8 +298,8 @@ service cloud.firestore {
     match /adminUsers/{uid} {
       allow get: if isOwner(uid) || isAdmin();
       allow list: if isAdmin();
-      allow create: if canManageRoles() && request.resource.data.uid == uid;
-      allow update: if canManageRoles() ||
+      allow create: if canManageRoles() && validAdminWrite(uid);
+      allow update: if (canManageRoles() && validAdminWrite(uid)) ||
         (isOwner(uid) && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name', 'lastLoginAt', 'updatedAt']));
       allow delete: if canManageRoles() && uid != request.auth.uid;
     }
@@ -309,14 +364,21 @@ service cloud.firestore {
     }
 
     // ------------------------------------------------------ content catalog
+    // Members can discover published coaching content. Drafts and archived
+    // records remain visible only to content administrators.
     match /workoutPlans/{docId} {
-      allow read, write: if canManageContent();
+      allow get, list: if canManageContent() ||
+        (signedIn() && resource.data.status == 'published');
+      allow write: if canManageContent();
     }
     match /exerciseLibrary/{docId} {
-      allow read, write: if canManageContent();
+      allow get, list: if signedIn();
+      allow write: if canManageContent();
     }
     match /nutritionPlans/{docId} {
-      allow read, write: if canManageContent();
+      allow get, list: if canManageContent() ||
+        (signedIn() && resource.data.status == 'published');
+      allow write: if canManageContent();
     }
     match /missionSettings/{missionId} {
       allow read: if signedIn();
@@ -324,6 +386,15 @@ service cloud.firestore {
     }
     match /platformSettings/{docId} {
       allow read, write: if canManagePlatform();
+    }
+
+    // --------------------------------------------------------- announcements
+    match /announcements/{announcementId} {
+      allow get, list: if canManagePlatform() ||
+        (signedIn() && resource.data.status == 'published');
+      allow create: if canManagePlatform() && validAnnouncementWrite();
+      allow update: if canManagePlatform() && validAnnouncementWrite();
+      allow delete: if canManagePlatform();
     }
 
     match /{document=**} {

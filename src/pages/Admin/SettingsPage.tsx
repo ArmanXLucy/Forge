@@ -19,7 +19,7 @@ import type { PlatformSettings } from '../../types/admin'
 import { cn } from '../../lib/utils'
 
 const DEFAULT_SETTINGS: PlatformSettings = {
-  supportEmail: 'hello@forge-athletic.ch',
+  supportEmail: '',
   supportSlaHours: 24,
   maintenanceMessage: '',
   updatedAt: '',

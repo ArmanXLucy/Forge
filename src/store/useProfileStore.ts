@@ -38,6 +38,8 @@ interface ProfileState {
   avatarUrl: string | null
   avatarPath: string | null
   accountStatus: 'active' | 'suspended'
+  suspensionReason: string | null
+  suspendedByName: string | null
   hydrated: boolean
   cloudEnabled: boolean
   syncStatus: SyncStatus
@@ -100,6 +102,8 @@ export const useProfileStore = create<ProfileState>((set, get) => ({
   avatarUrl: null,
   avatarPath: null,
   accountStatus: 'active',
+  suspensionReason: null,
+  suspendedByName: null,
   hydrated: false,
   cloudEnabled: false,
   syncStatus: 'local',
@@ -121,6 +125,8 @@ export const useProfileStore = create<ProfileState>((set, get) => ({
       avatarUrl: options.photoURL ?? null,
       avatarPath: null,
       accountStatus: 'active',
+      suspensionReason: null,
+      suspendedByName: null,
       hydrated: !cloudEnabled || Boolean(localProfile),
       cloudEnabled,
       syncStatus: cloudEnabled ? 'loading' : 'local',
@@ -158,6 +164,8 @@ export const useProfileStore = create<ProfileState>((set, get) => ({
             null,
           avatarPath: account.avatarPath ?? null,
           accountStatus: 'suspended',
+          suspensionReason: account.suspensionReason,
+          suspendedByName: account.suspendedByName,
           hydrated: true,
           syncStatus: 'synced',
           syncError: null,
@@ -198,6 +206,8 @@ export const useProfileStore = create<ProfileState>((set, get) => ({
           null,
         avatarPath: account?.avatarPath ?? null,
         accountStatus: account?.accountStatus ?? 'active',
+        suspensionReason: account?.suspensionReason ?? null,
+        suspendedByName: account?.suspendedByName ?? null,
         hydrated: true,
         syncStatus: 'synced',
         syncError: null,
@@ -221,6 +231,8 @@ export const useProfileStore = create<ProfileState>((set, get) => ({
       avatarUrl: null,
       avatarPath: null,
       accountStatus: 'active',
+      suspensionReason: null,
+      suspendedByName: null,
       hydrated: false,
       cloudEnabled: false,
       syncStatus: 'local',

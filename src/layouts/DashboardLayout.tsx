@@ -15,6 +15,8 @@ export function DashboardLayout() {
   const profile = useProfileStore((s) => s.profile)
   const hydrated = useProfileStore((s) => s.hydrated)
   const accountStatus = useProfileStore((s) => s.accountStatus)
+  const suspensionReason = useProfileStore((s) => s.suspensionReason)
+  const suspendedByName = useProfileStore((s) => s.suspendedByName)
   const { user, signOut } = useAuth()
   const { isCloud, error } = useDataStatus()
   const location = useLocation()
@@ -42,6 +44,17 @@ export function DashboardLayout() {
             This account has been suspended by an administrator. Open a support request after access
             is restored if you need help.
           </p>
+          {suspensionReason && (
+            <p className="mt-3 rounded-xl border border-white/10 bg-black/20 p-3 text-[11px] leading-relaxed text-white/55">
+              <span className="block text-[9px] font-bold uppercase tracking-[0.14em] text-orange-400">
+                Reason
+              </span>
+              <span className="mt-1 block">{suspensionReason}</span>
+              {suspendedByName && (
+                <span className="mt-1 block text-white/30">Recorded by {suspendedByName}</span>
+              )}
+            </p>
+          )}
           <button
             type="button"
             onClick={() => void signOut()}

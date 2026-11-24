@@ -39,6 +39,7 @@ import {
   StatCard,
 } from '../../components/dashboard/ui'
 import { ProgressRing } from '../../components/ui/ProgressRing'
+import { AnnouncementBanner } from '../../components/dashboard/AnnouncementBanner'
 import { buttonClasses } from '../../components/ui/Button'
 import { MISSION_ICONS } from '../../components/navigation/dashboardNav'
 import { useProfileStore, useProfileStats } from '../../store/useProfileStore'
@@ -201,6 +202,8 @@ export default function OverviewPage() {
           </div>
         }
       />
+
+      <AnnouncementBanner />
 
       <section className="relative overflow-hidden rounded-2xl bg-charcoal p-6 text-white sm:p-8">
         <div className="absolute inset-0">

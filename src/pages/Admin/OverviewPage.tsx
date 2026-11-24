@@ -10,8 +10,11 @@ import {
   Database,
   Dumbbell,
   HardDrive,
+  MessageSquare,
   RefreshCw,
+  ShieldCheck,
   Target,
+  UserX,
   Users,
 } from 'lucide-react'
 import {
@@ -28,8 +31,16 @@ import {
   XAxis,
   YAxis,
 } from 'recharts'
-import { AdminEmptyState, AdminError, AdminLoading, AdminPanel, AdminPageHeader, AdminStat, SupportStatusBadge } from '../../components/admin/ui'
-import { useAdminSnapshot } from '../../features/admin/useAdminSnapshot'
+import {
+  AdminEmptyState,
+  AdminError,
+  AdminLoading,
+  AdminPanel,
+  AdminPageHeader,
+  AdminStat,
+  SupportStatusBadge,
+} from '../../components/admin/ui'
+import { useAdminOverview } from '../../features/admin/useAdminOverview'
 import { useSupabaseStorageHealth } from '../../hooks/useSupabaseStorageHealth'
 import { formatDate } from '../../lib/utils'
 import { relativeTime } from '../../utils/activity'
@@ -39,21 +50,8 @@ import { cn } from '../../lib/utils'
 
 const STATUS_COLORS = ['#F97316', '#3B82F6', '#F59E0B', '#10B981', '#78716C']
 
-function lastDays(count: number) {
-  const days: { key: string; label: string }[] = []
-  for (let index = count - 1; index >= 0; index -= 1) {
-    const date = new Date()
-    date.setDate(date.getDate() - index)
-    days.push({
-      key: date.toISOString().slice(0, 10),
-      label: date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }),
-    })
-  }
-  return days
-}
-
 export default function AdminOverviewPage() {
-  const { data, loading, error, refresh } = useAdminSnapshot()
+  const { data, loading, error, refresh } = useAdminOverview()
   const storageHealth = useSupabaseStorageHealth()
   const [aiStatus, setAiStatus] = useState<'checking' | 'ready' | 'unavailable'>('checking')
   const [aiVersion, setAiVersion] = useState<string | null>(null)
@@ -66,10 +64,12 @@ export default function AdminOverviewPage() {
         return response.json()
       }),
       ...['squat', 'bicep_curl', 'push_up'].map((exercise) =>
-        fetch(`/models/form_classifier_${exercise}.onnx`, { method: 'HEAD' }).then((response) => {
-          if (!response.ok) throw new Error('model')
-          return response
-        }),
+        fetch(`/models/form_classifier_${exercise}.onnx`, { method: 'HEAD' }).then(
+          (response) => {
+            if (!response.ok) throw new Error('model')
+            return response
+          },
+        ),
       ),
     ])
       .then(([metadata]) => {
@@ -85,112 +85,51 @@ export default function AdminOverviewPage() {
     }
   }, [])
 
-  const stats = useMemo(() => {
-    if (!data) return null
-    const now = Date.now()
-    const thirtyDays = 30 * 24 * 60 * 60 * 1000
-    const activeIds = new Set<string>()
-    data.workouts.forEach((item) => {
-      if (now - new Date(item.completedAt).getTime() <= thirtyDays) activeIds.add(item.userId)
-    })
-    data.aiSessions.forEach((item) => {
-      if (now - new Date(item.completedAt).getTime() <= thirtyDays) activeIds.add(item.userId)
-    })
-    data.missions.forEach((item) => {
-      if (item.completedAt && now - new Date(item.completedAt).getTime() <= thirtyDays) {
-        activeIds.add(item.userId)
-      }
-    })
-    const openTickets = data.tickets.filter((ticket) =>
-      ['open', 'in_progress', 'waiting_for_user'].includes(ticket.status),
-    ).length
-    return {
-      users: data.users.length,
-      activeUsers: activeIds.size,
-      newUsers: data.users.filter((user) => now - new Date(user.createdAt).getTime() <= thirtyDays).length,
-      workouts: data.workouts.length,
-      completedWorkouts: data.workouts.filter((item) => item.exercisesCompleted >= item.totalExercises && item.totalExercises > 0).length,
-      missionRecords: data.missions.length,
-      completedMissions: data.missions.filter((item) => item.status === 'completed').length,
-      tickets: data.tickets.length,
-      openTickets,
-      aiSessions: data.aiSessions.length,
-    }
-  }, [data])
-
-  const activityTrend = useMemo(() => {
-    const days = lastDays(7)
-    return days.map((day) => ({
-      day: day.label,
-      workouts: data?.workouts.filter((item) => item.completedAt.slice(0, 10) === day.key).length ?? 0,
-      ai: data?.aiSessions.filter((item) => item.completedAt.slice(0, 10) === day.key).length ?? 0,
-    }))
-  }, [data])
-
-  const registrationTrend = useMemo(() => {
-    if (!data) return []
-    const months: { key: string; label: string; count: number }[] = []
-    for (let index = 5; index >= 0; index -= 1) {
-      const date = new Date()
-      date.setDate(1)
-      date.setMonth(date.getMonth() - index)
-      months.push({
-        key: `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`,
-        label: date.toLocaleDateString('en-GB', { month: 'short' }),
-        count: 0,
-      })
-    }
-    data.users.forEach((user) => {
-      const month = user.createdAt.slice(0, 7)
-      const entry = months.find((item) => item.key === month)
-      if (entry) entry.count += 1
-    })
-    return months
-  }, [data])
-
   const ticketBreakdown = useMemo(() => {
     if (!data) return []
-    return ['open', 'in_progress', 'waiting_for_user', 'resolved', 'closed'].map((status, index) => ({
-      name: supportStatusLabel(status as never),
-      value: data.tickets.filter((ticket) => ticket.status === status).length,
+    return data.ticketBreakdown.map((item, index) => ({
+      name: supportStatusLabel(item.status as never),
+      value: item.count,
       color: STATUS_COLORS[index],
     }))
-  }, [data])
-
-  const exercisePopularity = useMemo(() => {
-    if (!data) return []
-    const counts = new Map<string, number>()
-    data.aiSessions.forEach((session) => {
-      counts.set(session.exerciseLabel, (counts.get(session.exerciseLabel) ?? 0) + 1)
-    })
-    return [...counts.entries()]
-      .map(([name, count]) => ({ name, count }))
-      .sort((a, b) => b.count - a.count)
-      .slice(0, 6)
   }, [data])
 
   const recent = useMemo(() => {
     if (!data) return []
     const items: Array<{ id: string; title: string; detail: string; time: string; type: string }> = []
-    data.users.slice(0, 4).forEach((user) =>
-      items.push({ id: `u-${user.uid}`, title: user.fullName, detail: user.email, time: user.createdAt, type: 'Registration' }),
+    data.recentUsers.forEach((user) =>
+      items.push({
+        id: `u-${user.uid}`,
+        title: user.fullName,
+        detail: user.email,
+        time: user.createdAt,
+        type: 'Registration',
+      }),
     )
-    data.workouts
-      .slice()
-      .sort((a, b) => b.completedAt.localeCompare(a.completedAt))
-      .slice(0, 4)
-      .forEach((workout) =>
-        items.push({ id: `w-${workout.id}`, title: workout.title, detail: `${workout.userId.slice(0, 8)} · ${workout.exercisesCompleted}/${workout.totalExercises} exercises`, time: workout.completedAt, type: 'Workout' }),
-      )
-    data.tickets.slice(0, 4).forEach((ticket) =>
-      items.push({ id: `t-${ticket.id}`, title: ticket.subject, detail: `${ticket.ticketId} · ${ticket.userName}`, time: ticket.lastMessageAt, type: 'Support' }),
+    data.recentWorkouts.forEach((workout) =>
+      items.push({
+        id: `w-${workout.id}`,
+        title: workout.title,
+        detail: `${workout.userId.slice(0, 8)} · ${workout.exercisesCompleted}/${workout.totalExercises} exercises`,
+        time: workout.completedAt,
+        type: 'Workout',
+      }),
+    )
+    data.recentTickets.forEach((ticket) =>
+      items.push({
+        id: `t-${ticket.id}`,
+        title: ticket.subject,
+        detail: `${ticket.ticketId} · ${ticket.userName}`,
+        time: ticket.lastMessageAt,
+        type: 'Support',
+      }),
     )
     return items.sort((a, b) => b.time.localeCompare(a.time)).slice(0, 8)
   }, [data])
 
   if (loading) return <AdminLoading label="Loading platform overview…" />
   if (error) return <AdminError message={error} />
-  if (!data || !stats) {
+  if (!data) {
     return (
       <AdminEmptyState
         title="No platform data available"
@@ -200,6 +139,8 @@ export default function AdminOverviewPage() {
   }
 
   const supabaseReady = storageHealth === 'ok'
+  const counts = data.counts
+  const hasActivity = data.activityTrend.some((item) => item.workouts + item.ai > 0)
 
   return (
     <div>
@@ -214,28 +155,102 @@ export default function AdminOverviewPage() {
         }
       />
 
-      {data.errors.length > 0 && (
+      {(data.errors.length > 0 || data.bounded.length > 0) && (
         <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-[11px] leading-relaxed text-amber-800">
-          Some datasets could not be read: {data.errors.join(' · ')}
+          {data.errors.length > 0 && (
+            <p>Some datasets could not be read: {data.errors.join(' · ')}</p>
+          )}
+          {data.bounded.length > 0 && (
+            <p className="mt-1">
+              Activity counts are exact. Active-member coverage is bounded: {data.bounded.join(' · ')}.
+            </p>
+          )}
         </div>
       )}
 
       <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
-        <AdminStat icon={Users} label="Registered users" value={stats.users} note={`${stats.newUsers} new in 30 days`} accent />
-        <AdminStat icon={Activity} label="Active users · 30d" value={stats.activeUsers} note="Members with training, mission or AI activity" />
-        <AdminStat icon={CalendarPlus} label="New registrations" value={stats.newUsers} note="Last 30 days" />
-        <AdminStat icon={Dumbbell} label="Workout sessions" value={stats.workouts} note={`${stats.completedWorkouts} fully completed`} />
-        <AdminStat icon={Target} label="Mission records" value={stats.missionRecords} note={`${stats.completedMissions} completed`} />
-        <AdminStat icon={CircleHelp} label="Support tickets" value={stats.tickets} note={`${stats.openTickets} open / active`} />
-        <AdminStat icon={BrainCircuit} label="AI sessions" value={stats.aiSessions} note="Saved inference sessions, not raw requests" />
-        <AdminStat icon={Database} label="Nutrition days" value={data.nutritionDays} note="Daily nutrition documents" />
+        <AdminStat
+          icon={Users}
+          label="Registered users"
+          value={counts.users}
+          note={`${counts.newUsers} new in 30 days`}
+          accent
+        />
+        <AdminStat
+          icon={Activity}
+          label="Active users · 30d"
+          value={counts.activeUsers}
+          note="Members with training, mission or AI activity"
+        />
+        <AdminStat
+          icon={UserX}
+          label="Suspended"
+          value={counts.suspendedUsers}
+          note="Accounts blocked by Firestore rules"
+        />
+        <AdminStat
+          icon={CalendarPlus}
+          label="New registrations"
+          value={counts.newUsers}
+          note="Last 30 days"
+        />
+        <AdminStat
+          icon={Dumbbell}
+          label="Workout sessions"
+          value={counts.workouts}
+          note="Saved member workout records"
+        />
+        <AdminStat
+          icon={Target}
+          label="Mission records"
+          value={counts.missions}
+          note="Mission participation documents"
+        />
+        <AdminStat
+          icon={CircleHelp}
+          label="Support tickets"
+          value={counts.tickets}
+          note="All member requests"
+        />
+        <AdminStat
+          icon={MessageSquare}
+          label="Open support"
+          value={counts.openTickets}
+          note="Open, in progress or waiting"
+        />
+        <AdminStat
+          icon={CheckCircle2}
+          label="Resolved support"
+          value={counts.resolvedTickets}
+          note="Resolved or closed"
+        />
+        <AdminStat
+          icon={BrainCircuit}
+          label="AI sessions"
+          value={counts.aiSessions}
+          note="Saved inference sessions, not raw requests"
+        />
+        <AdminStat
+          icon={Database}
+          label="Nutrition days"
+          value={counts.nutritionDays}
+          note="Daily nutrition documents"
+        />
       </div>
 
       <div className="mt-4 grid gap-4 xl:grid-cols-2">
-        <AdminPanel eyebrow="Members" title="Registration trend" action={<span className="text-[9px] uppercase tracking-[0.12em] text-charcoal/30">Last 6 months</span>}>
+        <AdminPanel
+          eyebrow="Members"
+          title="Registration trend"
+          action={
+            <span className="text-[9px] uppercase tracking-[0.12em] text-charcoal/30">
+              Last 6 months
+            </span>
+          }
+        >
           <div className="h-[230px]">
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={registrationTrend} margin={{ top: 8, right: 8, left: -22, bottom: 0 }}>
+              <LineChart data={data.registrationTrend} margin={{ top: 8, right: 8, left: -22, bottom: 0 }}>
                 <CartesianGrid stroke="#17171710" vertical={false} />
                 <XAxis dataKey="label" tick={{ fontSize: 10, fill: '#78716C' }} axisLine={false} tickLine={false} />
                 <YAxis allowDecimals={false} tick={{ fontSize: 10, fill: '#78716C' }} axisLine={false} tickLine={false} />
@@ -246,19 +261,35 @@ export default function AdminOverviewPage() {
           </div>
         </AdminPanel>
 
-        <AdminPanel eyebrow="Activity" title="Training & AI sessions" action={<span className="text-[9px] uppercase tracking-[0.12em] text-charcoal/30">Last 7 days</span>}>
-          <div className="h-[230px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={activityTrend} margin={{ top: 8, right: 8, left: -22, bottom: 0 }}>
-                <CartesianGrid stroke="#17171710" vertical={false} />
-                <XAxis dataKey="day" tick={{ fontSize: 10, fill: '#78716C' }} axisLine={false} tickLine={false} />
-                <YAxis allowDecimals={false} tick={{ fontSize: 10, fill: '#78716C' }} axisLine={false} tickLine={false} />
-                <Tooltip contentStyle={{ borderRadius: 12, border: '1px solid #17171718', fontSize: 11 }} />
-                <Bar dataKey="workouts" name="Workouts" fill="#171717" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="ai" name="AI sessions" fill="#F97316" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
+        <AdminPanel
+          eyebrow="Activity"
+          title="Training & AI sessions"
+          action={
+            <span className="text-[9px] uppercase tracking-[0.12em] text-charcoal/30">
+              Last 7 days
+            </span>
+          }
+        >
+          {hasActivity ? (
+            <div className="h-[230px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={data.activityTrend} margin={{ top: 8, right: 8, left: -22, bottom: 0 }}>
+                  <CartesianGrid stroke="#17171710" vertical={false} />
+                  <XAxis dataKey="label" tick={{ fontSize: 10, fill: '#78716C' }} axisLine={false} tickLine={false} />
+                  <YAxis allowDecimals={false} tick={{ fontSize: 10, fill: '#78716C' }} axisLine={false} tickLine={false} />
+                  <Tooltip contentStyle={{ borderRadius: 12, border: '1px solid #17171718', fontSize: 11 }} />
+                  <Bar dataKey="workouts" name="Workouts" fill="#171717" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="ai" name="AI sessions" fill="#F97316" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          ) : (
+            <AdminEmptyState
+              icon={Activity}
+              title="No activity in the last 7 days"
+              description="Workouts and AI sessions will appear after members train."
+            />
+          )}
         </AdminPanel>
 
         <AdminPanel eyebrow="Support" title="Ticket status">
@@ -288,15 +319,19 @@ export default function AdminOverviewPage() {
               </ul>
             </div>
           ) : (
-            <AdminEmptyState icon={CircleHelp} title="No support tickets yet" description="Ticket status breakdown will appear when members open their first request." />
+            <AdminEmptyState
+              icon={CircleHelp}
+              title="No support tickets yet"
+              description="Ticket status breakdown will appear when members open their first request."
+            />
           )}
         </AdminPanel>
 
         <AdminPanel eyebrow="AI Coach" title="Exercise session mix">
-          {exercisePopularity.length ? (
+          {data.exerciseMix.length ? (
             <div className="h-[200px]">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={exercisePopularity} layout="vertical" margin={{ top: 4, right: 12, left: 4, bottom: 0 }}>
+                <BarChart data={data.exerciseMix} layout="vertical" margin={{ top: 4, right: 12, left: 4, bottom: 0 }}>
                   <CartesianGrid stroke="#17171710" horizontal={false} />
                   <XAxis type="number" allowDecimals={false} tick={{ fontSize: 10, fill: '#78716C' }} axisLine={false} tickLine={false} />
                   <YAxis type="category" dataKey="name" width={84} tick={{ fontSize: 10, fill: '#78716C' }} axisLine={false} tickLine={false} />
@@ -306,7 +341,11 @@ export default function AdminOverviewPage() {
               </ResponsiveContainer>
             </div>
           ) : (
-            <AdminEmptyState icon={BrainCircuit} title="No AI sessions recorded" description="AI Coach session records will appear here after members complete a camera session." />
+            <AdminEmptyState
+              icon={BrainCircuit}
+              title="No AI sessions recorded"
+              description="AI Coach session records will appear here after members complete a camera session."
+            />
           )}
         </AdminPanel>
       </div>
@@ -317,43 +356,100 @@ export default function AdminOverviewPage() {
             <ul className="divide-y divide-charcoal/5">
               {recent.map((item) => (
                 <li key={item.id} className="flex items-start gap-3 px-5 py-3.5 sm:px-6">
-                  <span className={cn('mt-0.5 rounded-full px-2 py-1 text-[8px] font-bold uppercase tracking-[0.12em]', item.type === 'Support' ? 'bg-orange-500/10 text-orange-700' : item.type === 'Workout' ? 'bg-charcoal text-white' : 'bg-charcoal/[0.04] text-charcoal/50')}>
+                  <span
+                    className={cn(
+                      'mt-0.5 rounded-full px-2 py-1 text-[8px] font-bold uppercase tracking-[0.12em]',
+                      item.type === 'Support'
+                        ? 'bg-orange-500/10 text-orange-700'
+                        : item.type === 'Workout'
+                          ? 'bg-charcoal text-white'
+                          : 'bg-charcoal/[0.04] text-charcoal/50',
+                    )}
+                  >
                     {item.type}
                   </span>
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-[12px] font-semibold text-charcoal">{item.title}</p>
                     <p className="truncate text-[10px] text-charcoal/45">{item.detail}</p>
                   </div>
-                  <span className="shrink-0 text-[9px] uppercase tracking-[0.1em] text-charcoal/30">{relativeTime(item.time)}</span>
+                  <span className="shrink-0 text-[9px] uppercase tracking-[0.1em] text-charcoal/30">
+                    {relativeTime(item.time)}
+                  </span>
                 </li>
               ))}
             </ul>
           ) : (
-            <AdminEmptyState title="No recent activity" description="Registrations, workouts and support events will appear here." />
+            <AdminEmptyState
+              title="No recent activity"
+              description="Registrations, workouts and support events will appear here."
+            />
           )}
         </AdminPanel>
 
         <div className="space-y-4">
           <AdminPanel eyebrow="Infrastructure" title="System status">
             <ul className="space-y-3">
-              <StatusRow icon={Database} label="Firebase Firestore" detail={data.errors.some((item) => item.startsWith('Users')) ? 'Read error' : 'Connected · live reads'} ok={!data.errors.some((item) => item.startsWith('Users'))} />
-              <StatusRow icon={HardDrive} label="Supabase Storage" detail={storageHealth === 'ok' ? 'profile-images reachable' : storageHealth === 'missing-bucket' ? 'Bucket missing' : storageHealth === 'checking' ? 'Checking…' : 'Unreachable'} ok={supabaseReady} />
-              <StatusRow icon={BrainCircuit} label="AI model" detail={aiStatus === 'ready' ? `ONNX v${aiVersion} · 3 exercises` : aiStatus === 'checking' ? 'Checking model files…' : 'Model files unavailable'} ok={aiStatus === 'ready'} />
+              <StatusRow
+                icon={Database}
+                label="Firebase Firestore"
+                detail={data.errors.some((item) => item.startsWith('Users')) ? 'Read error' : 'Connected · aggregate reads'}
+                ok={!data.errors.some((item) => item.startsWith('Users'))}
+              />
+              <StatusRow
+                icon={HardDrive}
+                label="Supabase Storage"
+                detail={
+                  storageHealth === 'ok'
+                    ? 'profile-images reachable'
+                    : storageHealth === 'missing-bucket'
+                      ? 'Bucket missing'
+                      : storageHealth === 'checking'
+                        ? 'Checking…'
+                        : 'Unreachable'
+                }
+                ok={supabaseReady}
+              />
+              <StatusRow
+                icon={BrainCircuit}
+                label="AI model"
+                detail={
+                  aiStatus === 'ready'
+                    ? `ONNX v${aiVersion} · 3 exercises`
+                    : aiStatus === 'checking'
+                      ? 'Checking model files…'
+                      : 'Model files unavailable'
+                }
+                ok={aiStatus === 'ready'}
+              />
             </ul>
             <p className="mt-4 text-[9px] leading-relaxed text-charcoal/35">
-              Status reflects reads from this browser session. Inference latency and failed-inference telemetry are not collected by the current client-only AI implementation.
+              Totals use Firestore aggregate counts. Active members and trend charts use bounded
+              activity reads from the last 7 or 30 days.
             </p>
           </AdminPanel>
 
-          <AdminPanel eyebrow="Support" title="Latest tickets" action={<Link to="/admin/help-desk" className="text-[10px] font-bold uppercase tracking-[0.12em] text-orange-600">View all</Link>}>
-            {data.tickets.length ? (
+          <AdminPanel
+            eyebrow="Support"
+            title="Latest tickets"
+            action={
+              <Link to="/admin/help-desk" className="text-[10px] font-bold uppercase tracking-[0.12em] text-orange-600">
+                View all
+              </Link>
+            }
+          >
+            {data.recentTickets.length ? (
               <ul className="space-y-2.5">
-                {data.tickets.slice(0, 4).map((ticket) => (
+                {data.recentTickets.slice(0, 4).map((ticket) => (
                   <li key={ticket.id}>
-                    <Link to={`/admin/help-desk/${ticket.id}`} className="flex items-start justify-between gap-3 rounded-xl border border-charcoal/8 p-3 transition-colors hover:border-orange-500/20 hover:bg-orange-500/[0.02]">
+                    <Link
+                      to={`/admin/help-desk/${ticket.id}`}
+                      className="flex items-start justify-between gap-3 rounded-xl border border-charcoal/8 p-3 transition-colors hover:border-orange-500/20 hover:bg-orange-500/[0.02]"
+                    >
                       <div className="min-w-0">
                         <p className="truncate text-[11px] font-semibold text-charcoal">{ticket.subject}</p>
-                        <p className="mt-0.5 text-[9px] text-charcoal/40">{ticket.ticketId} · {ticket.userName}</p>
+                        <p className="mt-0.5 text-[9px] text-charcoal/40">
+                          {ticket.ticketId} · {ticket.userName}
+                        </p>
                       </div>
                       <SupportStatusBadge status={ticket.status} />
                     </Link>
@@ -361,7 +457,39 @@ export default function AdminOverviewPage() {
                 ))}
               </ul>
             ) : (
-              <AdminEmptyState icon={CircleHelp} title="Help Desk is clear" description="No member tickets have been created yet." />
+              <AdminEmptyState
+                icon={CircleHelp}
+                title="Help Desk is clear"
+                description="No member tickets have been created yet."
+              />
+            )}
+          </AdminPanel>
+
+          <AdminPanel
+            eyebrow="Audit"
+            title="Administrative activity"
+            action={
+              <Link to="/admin/activity" className="text-[10px] font-bold uppercase tracking-[0.12em] text-orange-600">
+                View log
+              </Link>
+            }
+          >
+            {data.recentAdminActivity.length ? (
+              <ul className="space-y-3">
+                {data.recentAdminActivity.slice(0, 5).map((item) => (
+                  <li key={item.id} className="flex gap-2.5">
+                    <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-orange-500" />
+                    <div className="min-w-0">
+                      <p className="truncate text-[10px] font-semibold text-charcoal">{item.action}</p>
+                      <p className="truncate text-[9px] text-charcoal/40">
+                        {item.adminName} · {relativeTime(item.createdAt)}
+                      </p>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-[10px] text-charcoal/35">No administrative actions recorded yet.</p>
             )}
           </AdminPanel>
         </div>
@@ -373,6 +501,9 @@ export default function AdminOverviewPage() {
         </Link>
         <Link to="/admin/help-desk" className={buttonClasses('outline', 'sm')}>
           Open Help Desk <ArrowUpRight className="h-3.5 w-3.5" />
+        </Link>
+        <Link to="/admin/activity" className={buttonClasses('outline', 'sm')}>
+          Review audit log <ShieldCheck className="h-3.5 w-3.5" />
         </Link>
       </div>
       <p className="mt-4 text-[9px] uppercase tracking-[0.12em] text-charcoal/25">
@@ -402,7 +533,12 @@ function StatusRow({
         <p className="text-[11px] font-semibold text-charcoal">{label}</p>
         <p className="truncate text-[9px] text-charcoal/40">{detail}</p>
       </div>
-      <span className={cn('inline-flex items-center gap-1 text-[8px] font-bold uppercase tracking-[0.12em]', ok ? 'text-emerald-700' : 'text-amber-700')}>
+      <span
+        className={cn(
+          'inline-flex items-center gap-1 text-[8px] font-bold uppercase tracking-[0.12em]',
+          ok ? 'text-emerald-700' : 'text-amber-700',
+        )}
+      >
         <span className={cn('h-1 w-1 rounded-full', ok ? 'bg-emerald-500' : 'bg-amber-500')} />
         {ok ? 'Operational' : 'Attention'}
       </span>

@@ -9,11 +9,17 @@ import {
   AdminStat,
 } from '../../components/admin/ui'
 import { useAdminSnapshot } from '../../features/admin/useAdminSnapshot'
-import { getMissionSettings, setMissionEnabled } from '../../services/cloud/adminRepository'
+import { useAdminAccess } from '../../features/admin/useAdminAccess'
+import {
+  getMissionSettings,
+  logAdminActivity,
+  setMissionEnabled,
+} from '../../services/cloud/adminRepository'
 import { MISSIONS } from '../../data/missions'
 import { cn } from '../../lib/utils'
 
 export default function AdminMissionsPage() {
+  const { admin } = useAdminAccess()
   const { data, loading: snapshotLoading } = useAdminSnapshot()
   const [settings, setSettings] = useState<Record<string, boolean>>({})
   const [loading, setLoading] = useState(true)
@@ -31,6 +37,17 @@ export default function AdminMissionsPage() {
     setSaving(missionId)
     try {
       await setMissionEnabled(missionId, enabled)
+      if (admin) {
+        await logAdminActivity({
+          adminId: admin.uid,
+          adminName: admin.name,
+          action: 'content.update',
+          targetType: 'missionSettings',
+          targetId: missionId,
+          detail: `Mission ${enabled ? 'enabled' : 'hidden'}`,
+          metadata: { enabled },
+        })
+      }
       setSettings((current) => ({ ...current, [missionId]: enabled }))
       toast.success(enabled ? 'Mission enabled.' : 'Mission hidden from members.')
     } catch (reason) {

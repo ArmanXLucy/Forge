@@ -9,13 +9,16 @@ import {
 import {
   collection,
   collectionGroup,
+  deleteDoc,
   doc,
   getDoc,
   getDocs,
+  query,
   serverTimestamp,
   setDoc,
   Timestamp,
   updateDoc,
+  where,
   type Firestore,
 } from 'firebase/firestore'
 
@@ -199,6 +202,46 @@ async function seed() {
         title: 'Plan one',
         status: 'published',
       }),
+      setDoc(doc(db, 'workoutPlans', 'draftPlan'), {
+        title: 'Draft plan',
+        status: 'draft',
+      }),
+      setDoc(doc(db, 'nutritionPlans', 'nutrition1'), {
+        name: 'Performance base',
+        status: 'published',
+      }),
+      setDoc(doc(db, 'nutritionPlans', 'draftNutrition'), {
+        name: 'Draft nutrition',
+        status: 'draft',
+      }),
+      setDoc(doc(db, 'exerciseLibrary', 'squat'), {
+        name: 'Back squat',
+        instructions: 'Brace, sit down, stand up.',
+      }),
+      setDoc(doc(db, 'announcements', 'publishedNotice'), {
+        title: 'Platform update',
+        body: 'The member workspace has a new published announcement path.',
+        status: 'published',
+        tone: 'update',
+        createdBy: 'super',
+        createdByName: 'Super Admin',
+        createdAt: Timestamp.now(),
+        updatedAt: Timestamp.now(),
+        publishedAt: Timestamp.now(),
+        schemaVersion: 1,
+      }),
+      setDoc(doc(db, 'announcements', 'draftNotice'), {
+        title: 'Draft notice',
+        body: 'This announcement is still a draft and must not reach members.',
+        status: 'draft',
+        tone: 'info',
+        createdBy: 'super',
+        createdByName: 'Super Admin',
+        createdAt: Timestamp.now(),
+        updatedAt: Timestamp.now(),
+        publishedAt: null,
+        schemaVersion: 1,
+      }),
       setDoc(doc(db, 'platformSettings', 'main'), {
         supportEmail: 'support@example.test',
       }),
@@ -276,17 +319,18 @@ suite('Firestore security rules', () => {
       await assertSucceeds(updateDoc(userDocFor(db, 'alice'), { fullName: 'Alice Updated' }))
     })
 
-    it('denies creating a user document with administrator-controlled fields', async () => {
+    it('allows only the default active status on user creation', async () => {
       const db = testEnv.authenticatedContext('newbie').firestore()
       await assertFails(
         setDoc(doc(db, 'users', 'newbie'), {
           uid: 'newbie',
-          accountStatus: 'active',
+          accountStatus: 'suspended',
         }),
       )
       await assertSucceeds(
         setDoc(doc(db, 'users', 'newbie'), {
           uid: 'newbie',
+          accountStatus: 'active',
           fullName: 'New Member',
         }),
       )
@@ -302,6 +346,12 @@ suite('Firestore security rules', () => {
         }),
       )
     })
+
+    it('allows a legacy member to backfill only the default active status', async () => {
+      const db = testEnv.authenticatedContext('charlie').firestore()
+      await assertSucceeds(updateDoc(userDocFor(db, 'charlie'), { accountStatus: 'active' }))
+      await assertFails(updateDoc(userDocFor(db, 'charlie'), { accountStatus: 'suspended' }))
+    })
   })
 
   describe('administrator access', () => {
@@ -314,7 +364,7 @@ suite('Firestore security rules', () => {
     it('denies inactive admins protected operations', async () => {
       const db = testEnv.authenticatedContext('inactive').firestore()
       await assertFails(getDoc(doc(db, 'users', 'alice')))
-      await assertFails(getDoc(doc(db, 'workoutPlans', 'plan1')))
+      await assertFails(getDoc(doc(db, 'workoutPlans', 'draftPlan')))
     })
 
     it('denies members listing admin records or granting themselves a role', async () => {
@@ -336,13 +386,47 @@ suite('Firestore security rules', () => {
           uid: 'newadmin',
           role: 'analyst',
           active: true,
+          permissions: [],
         }),
       )
     })
 
-    it('allows user-management admins to change account status', async () => {
+    it('allows user-management admins to change account status with a reason', async () => {
       const db = testEnv.authenticatedContext('admin').firestore()
-      await assertSucceeds(updateDoc(userDocFor(db, 'alice'), { accountStatus: 'suspended' }))
+      await assertSucceeds(
+        updateDoc(userDocFor(db, 'alice'), {
+          accountStatus: 'suspended',
+          suspensionReason: 'Chargeback investigation pending review',
+          suspendedBy: 'admin',
+          suspendedByName: 'Admin User',
+        }),
+      )
+    })
+
+    it('denies admins writing arbitrary fields through account management', async () => {
+      const db = testEnv.authenticatedContext('admin').firestore()
+      await assertFails(updateDoc(userDocFor(db, 'alice'), { role: 'super_admin' }))
+      await assertFails(updateDoc(userDocFor(db, 'alice'), { email: 'forged@example.test' }))
+    })
+
+    it('validates administrator role documents', async () => {
+      const db = testEnv.authenticatedContext('super').firestore()
+      await assertFails(
+        setDoc(doc(db, 'adminUsers', 'badadmin'), {
+          uid: 'badadmin',
+          role: 'owner',
+          active: true,
+          permissions: [],
+        }),
+      )
+      await assertFails(
+        setDoc(doc(db, 'adminUsers', 'badadmin'), {
+          uid: 'badadmin',
+          role: 'admin',
+          active: 'yes',
+          permissions: [],
+        }),
+      )
     })
 
     it('denies support managers changing account status', async () => {
@@ -355,7 +439,8 @@ suite('Firestore security rules', () => {
       const fitnessDb = testEnv.authenticatedContext('fitness').firestore()
       const adminDb = testEnv.authenticatedContext('admin').firestore()
 
-      await assertFails(getDoc(doc(supportDb, 'workoutPlans', 'plan1')))
+      await assertSucceeds(getDoc(doc(supportDb, 'workoutPlans', 'plan1')))
+      await assertFails(getDoc(doc(supportDb, 'workoutPlans', 'draftPlan')))
       await assertSucceeds(getDoc(doc(fitnessDb, 'workoutPlans', 'plan1')))
       await assertSucceeds(getDoc(doc(adminDb, 'workoutPlans', 'plan1')))
       await assertFails(
@@ -368,6 +453,113 @@ suite('Firestore security rules', () => {
       const superDb = testEnv.authenticatedContext('super').firestore()
       await assertFails(getDoc(doc(adminDb, 'platformSettings', 'main')))
       await assertSucceeds(getDoc(doc(superDb, 'platformSettings', 'main')))
+    })
+
+    it('allows members to read published content but not drafts', async () => {
+      const db = testEnv.authenticatedContext('alice').firestore()
+      await assertSucceeds(getDoc(doc(db, 'workoutPlans', 'plan1')))
+      await assertFails(getDoc(doc(db, 'workoutPlans', 'draftPlan')))
+      await assertSucceeds(getDoc(doc(db, 'nutritionPlans', 'nutrition1')))
+      await assertFails(getDoc(doc(db, 'nutritionPlans', 'draftNutrition')))
+      await assertSucceeds(getDoc(doc(db, 'exerciseLibrary', 'squat')))
+    })
+
+    it('allows member list queries only for published content', async () => {
+      const db = testEnv.authenticatedContext('alice').firestore()
+      await assertSucceeds(
+        getDocs(query(collection(db, 'workoutPlans'), where('status', '==', 'published'))),
+      )
+      await assertFails(getDocs(collection(db, 'workoutPlans')))
+      await assertSucceeds(
+        getDocs(query(collection(db, 'announcements'), where('status', '==', 'published'))),
+      )
+      await assertFails(getDocs(collection(db, 'announcements')))
+    })
+
+    it('denies unauthenticated reads of coaching content', async () => {
+      const db = testEnv.unauthenticatedContext().firestore()
+      await assertFails(getDoc(doc(db, 'workoutPlans', 'plan1')))
+      await assertFails(getDoc(doc(db, 'exerciseLibrary', 'squat')))
+    })
+
+    it('allows platform admins to manage announcements', async () => {
+      const db = testEnv.authenticatedContext('super').firestore()
+      await assertSucceeds(
+        setDoc(doc(db, 'announcements', 'newNotice'), {
+          title: 'New member notice',
+          body: 'A valid announcement body for members.',
+          status: 'draft',
+          tone: 'info',
+          createdBy: 'super',
+          createdByName: 'Super Admin',
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+          publishedAt: null,
+          schemaVersion: 1,
+        }),
+      )
+      await assertSucceeds(
+        updateDoc(doc(db, 'announcements', 'newNotice'), {
+          status: 'published',
+          publishedAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+        }),
+      )
+      await assertSucceeds(deleteDoc(doc(db, 'announcements', 'newNotice')))
+    })
+
+    it('denies invalid or unauthorized announcement writes', async () => {
+      const superDb = testEnv.authenticatedContext('super').firestore()
+      const memberDb = testEnv.authenticatedContext('alice').firestore()
+      await assertFails(
+        setDoc(doc(superDb, 'announcements', 'invalid'), {
+          title: 'x',
+          body: 'short',
+          status: 'published',
+          tone: 'info',
+          createdBy: 'super',
+          updatedAt: serverTimestamp(),
+          publishedAt: null,
+          schemaVersion: 1,
+        }),
+      )
+      await assertFails(
+        setDoc(doc(memberDb, 'announcements', 'memberNotice'), {
+          title: 'Member notice',
+          body: 'Members must not create announcements.',
+          status: 'published',
+          tone: 'info',
+          createdBy: 'alice',
+          updatedAt: serverTimestamp(),
+          publishedAt: serverTimestamp(),
+          schemaVersion: 1,
+        }),
+      )
+    })
+
+    it('allows members to read only published announcements', async () => {
+      const db = testEnv.authenticatedContext('alice').firestore()
+      await assertSucceeds(getDoc(doc(db, 'announcements', 'publishedNotice')))
+      await assertFails(getDoc(doc(db, 'announcements', 'draftNotice')))
+    })
+
+    it('keeps audit records immutable to administrators', async () => {
+      await testEnv.withSecurityRulesDisabled(async (context) => {
+        await setDoc(doc(context.firestore(), 'adminActivityLogs', 'log1'), {
+          adminId: 'admin',
+          adminName: 'Admin User',
+          action: 'user.suspend',
+          targetType: 'user',
+          targetId: 'alice',
+          detail: 'Suspended',
+          createdAt: Timestamp.now(),
+          schemaVersion: 1,
+        })
+      })
+      const db = testEnv.authenticatedContext('admin').firestore()
+      await assertSucceeds(getDoc(doc(db, 'adminActivityLogs', 'log1')))
+      await assertFails(updateDoc(doc(db, 'adminActivityLogs', 'log1'), { detail: 'Rewritten' }))
+      await assertFails(deleteDoc(doc(db, 'adminActivityLogs', 'log1')))
     })
   })
 
@@ -569,7 +761,7 @@ suite('Firestore security rules', () => {
 
     it('keeps support managers out of unrelated admin collections', async () => {
       const db = testEnv.authenticatedContext('support').firestore()
-      await assertFails(getDoc(doc(db, 'workoutPlans', 'plan1')))
+      await assertFails(getDoc(doc(db, 'workoutPlans', 'draftPlan')))
       await assertFails(getDoc(doc(db, 'platformSettings', 'main')))
     })
   })

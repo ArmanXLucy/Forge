@@ -45,6 +45,11 @@ import { useActivityStore } from '../../store/useActivityStore'
 import { useDataStatus } from '../../hooks/useDataStatus'
 import { useProfileStore } from '../../store/useProfileStore'
 import {
+  getMemberExerciseLibrary,
+  getPublishedWorkoutPlans,
+} from '../../services/cloud/adminRepository'
+import type { AdminExercise, AdminWorkoutPlan } from '../../types/admin'
+import {
   addDays,
   dateKey,
   formatMinutes,
@@ -103,6 +108,23 @@ export default function WorkoutsPage() {
   const isAi = Boolean(aiPlan)
   const [expanded, setExpanded] = useState<string | null>(WORKOUTS[0].id)
   const [activeWorkout, setActiveWorkout] = useState<WorkoutSession | null>(null)
+  const [publishedPlans, setPublishedPlans] = useState<AdminWorkoutPlan[]>([])
+  const [exerciseLibrary, setExerciseLibrary] = useState<AdminExercise[]>([])
+
+  useEffect(() => {
+    if (!isCloud) return
+    let cancelled = false
+    Promise.all([getPublishedWorkoutPlans(), getMemberExerciseLibrary()])
+      .then(([plans, exercises]) => {
+        if (cancelled) return
+        setPublishedPlans(plans)
+        setExerciseLibrary(exercises)
+      })
+      .catch(() => undefined)
+    return () => {
+      cancelled = true
+    }
+  }, [isCloud])
 
   const today = new Date()
   const weekStart = startOfWeek(today)
@@ -559,6 +581,78 @@ export default function WorkoutsPage() {
           </div>
         </SectionCard>
       </div>
+      )}
+
+      {(publishedPlans.length > 0 || exerciseLibrary.length > 0) && (
+        <div className="mt-4 grid gap-4 xl:grid-cols-[1.2fr_0.8fr]">
+          {publishedPlans.length > 0 && (
+            <SectionCard
+              eyebrow="Coaching library"
+              title={`${publishedPlans.length} published plan${publishedPlans.length === 1 ? '' : 's'}.`}
+              action={<SourceBadge source="live" label="Published by Forge" />}
+            >
+              <div className="space-y-3">
+                {publishedPlans.map((plan) => (
+                  <article key={plan.id} className="rounded-xl border border-charcoal/10 p-4">
+                    <div className="flex flex-wrap items-start justify-between gap-2">
+                      <div>
+                        <p className="text-[12px] font-semibold text-charcoal">{plan.title}</p>
+                        <p className="mt-0.5 text-[9px] font-bold uppercase tracking-[0.1em] text-charcoal/35">
+                          {[plan.focus, plan.difficulty, `${plan.daysPerWeek} days / week`, `${plan.durationMinutes} min`]
+                            .filter(Boolean)
+                            .join(' · ')}
+                        </p>
+                      </div>
+                      <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-[8px] font-bold uppercase tracking-[0.1em] text-emerald-700">
+                        Published
+                      </span>
+                    </div>
+                    <p className="mt-2 text-[11px] leading-relaxed text-charcoal/50">{plan.description}</p>
+                    {plan.exercises && (
+                      <p className="mt-2 whitespace-pre-line rounded-lg bg-ivory px-3 py-2 text-[10px] leading-relaxed text-charcoal/45">
+                        {plan.exercises}
+                      </p>
+                    )}
+                  </article>
+                ))}
+              </div>
+              <p className="mt-3 text-[9px] leading-relaxed text-charcoal/30">
+                Published coaching content is separate from your generated AI plan and does not replace it.
+              </p>
+            </SectionCard>
+          )}
+          {exerciseLibrary.length > 0 && (
+            <SectionCard
+              eyebrow="Exercise reference"
+              title={`${exerciseLibrary.length} movement${exerciseLibrary.length === 1 ? '' : 's'} described.`}
+              action={<SourceBadge source="live" label="Coaching library" />}
+            >
+              <div className="max-h-[420px] space-y-2 overflow-y-auto pr-1">
+                {exerciseLibrary.map((exercise) => (
+                  <details key={exercise.id} className="rounded-xl border border-charcoal/10 px-3.5 py-3">
+                    <summary className="cursor-pointer list-none">
+                      <span className="flex items-center justify-between gap-2">
+                        <span className="text-[11px] font-semibold text-charcoal">{exercise.name}</span>
+                        <span className="text-[8px] font-bold uppercase tracking-[0.1em] text-charcoal/30">
+                          {exercise.difficulty}
+                        </span>
+                      </span>
+                      <span className="mt-0.5 block text-[9px] text-charcoal/40">{exercise.muscleGroups}</span>
+                    </summary>
+                    <p className="mt-2 whitespace-pre-line text-[10px] leading-relaxed text-charcoal/50">
+                      {exercise.instructions || 'No instructions recorded.'}
+                    </p>
+                    {exercise.aiSupported && (
+                      <p className="mt-2 text-[8px] font-bold uppercase tracking-[0.1em] text-orange-600">
+                        Available in AI Coach
+                      </p>
+                    )}
+                  </details>
+                ))}
+              </div>
+            </SectionCard>
+          )}
+        </div>
       )}
 
       <SectionCard

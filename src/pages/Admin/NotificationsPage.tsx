@@ -90,7 +90,7 @@ export default function NotificationsPage() {
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
         <AdminStat icon={Bell} label="Recent notifications" value={notifications.length} accent />
         <AdminStat icon={Users} label="Recipients last send" value={sent ?? '—'} note={sent === null ? 'No broadcast sent this session' : 'member documents written'} />
-        <AdminStat icon={CheckCheck} label="Unread in recent sample" value={unread} note="across latest 100 records" />
+        <AdminStat icon={CheckCheck} label="Unread in recent" value={unread} note="across latest 100 records" />
       </div>
 
       <div className="mt-4 grid gap-4 xl:grid-cols-[0.9fr_1.1fr]">
